@@ -128,7 +128,7 @@
       pointer-events: auto;
       font-size: 44px;
       padding: 10px 30px;
-      border-radius: 999px;
+      border-radius: 20px;
       border: 1px solid rgba(196,200,212,0.25);
       background: rgba(0,0,0,0.65);
       color: #f5f5ff;
@@ -150,12 +150,15 @@
       }
       #touchControls button {
         font-size: 64px;
+        background-color: color(srgb 0.4454 0.5591 0.68);
       }
     }
 
-    @media (max-width: 700px), (hover: none) and (pointer: coarse) {
+    @media (max-width: 680px), (hover: none) and (pointer: coarse) {
       #touchControls button {
-        font-size: 94px;
+        font-size: 100px;
+        bottom:50px;
+        border: none;
       }
     }
   </style>
