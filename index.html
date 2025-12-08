@@ -268,7 +268,7 @@
       },
       // L5: Trampoline Shrinks
       {
-        theme: 'Precision Landing', levelBounces: 7, trampWidthRatio: 0.7, trampSpeed: 0, husks: [{ x: W * 0.35, y: H * 0.40, size: 26 }, { x: W * 65, y: H * 0.30, size: 26 }], lambdaMultiplier: 1.6, dirMix: { H: 0.60, D: 0.35, V: 0.05 }, alienSpeedTop: 100, projectileRate: 0
+        theme: 'Precision Landing', levelBounces: 7, trampWidthRatio: 0.7, trampSpeed: 0, husks: [{ x: W * 0.35, y: H * 0.40, size: 26 }, { x: W * 0.65, y: H * 0.30, size: 26 }], lambdaMultiplier: 1.6, dirMix: { H: 0.60, D: 0.35, V: 0.05 }, alienSpeedTop: 100, projectileRate: 0
       },
       // L6: Trampoline Moves
       {
@@ -587,6 +587,9 @@
     let alienOpacity = 1.0; 
     let isInvincible = false; // Invincibility state
     let deathEffect = null;  // NEW: separate effect for deaths
+    let alienLandingGraceTimer = 0;       // NEW: time since alien touched down
+const ALIEN_LANDING_GRACE = 0.40;     // NEW: ~0.4s grace window
+
 
     const alienConfig = {
       size: 28
@@ -656,6 +659,7 @@
       husks = levelConfigs[currentLevel - 1].husks.map(h => ({ ...h }));
       alienDir = 1;
       alienLanded = false;
+      alienLandingGraceTimer = 0;
       lastProjectileTime = 0;
       winEffect = null; 
       alienOpacity = 1.0; // Reset Alien visibility
@@ -880,88 +884,102 @@
       }
     }
 
-    function updatePlayer(dt) {
-      if (keys.left) player.vx -= AX * dt;
-      if (keys.right) player.vx += AX * dt;
-      if (!keys.left && !keys.right && player.y < MIDLINE_Y) {
-        player.vx *= (1 - DAMPING * dt);
+function updatePlayer(dt) {
+  if (keys.left) player.vx -= AX * dt;
+  if (keys.right) player.vx += AX * dt;
+  if (!keys.left && !keys.right && player.y < MIDLINE_Y) {
+    player.vx *= (1 - DAMPING * dt);
+  }
+
+  player.vy += GRAVITY * dt;
+  player.x += player.vx * dt;
+  player.y += player.vy * dt;
+
+  // Soft ceiling
+  if (player.y < CEILING_Y) {
+    player.y = CEILING_Y;
+    if (player.vy < 0) player.vy = 0;
+  }
+
+  // Horizontal bounds
+  if (player.x < player.radius) {
+    player.x = player.radius;
+    if (player.vx < 0) player.vx = 0;
+  }
+  if (player.x > W - player.radius) {
+    player.x = W - player.radius;
+    if (player.vx > 0) player.vx = 0;
+  }
+
+  // Fall out of world
+  if (player.y > H + player.radius) {
+    loseLife('You fell out of bounds.');
+    return;
+  }
+
+  // Suction beam (PLAYING only)
+  if (gameState === State.PLAYING && player.y < ALIEN_SUCTION_Y && alien) {
+    const dx = Math.abs(player.x - alien.x);
+    if (dx <= ALIEN_BEAM_HALF_WIDTH) {
+      loseLife('You got caught in the alien suction beam!');
+      return;
+    }
+  }
+
+  // ---------------------------
+  // PLAYING state
+  // ---------------------------
+  if (gameState === State.PLAYING) {
+    if (checkTrampolineCollision()) {
+      bounceOnTrampoline();
+    }
+
+    // CHECK FOR DEATH VS INVINCIBILITY
+    if (!isInvincible && (checkAsteroidCollision() || checkHuskCollision() || checkProjectileCollision())) {
+      loseLife('You hit an obstacle.');
+      return;
+    }
+
+    // Powerups
+    if (checkHeartCollision()) {
+      // handled in checkHeartCollision
+    }
+    if (checkStarCollision()) {
+      // handled in checkStarCollision
+    }
+
+  // ---------------------------
+  // POST_TIMER state
+  // ---------------------------
+  } else if (gameState === State.POST_TIMER) {
+    // 1. WIN condition: landing on the alien (works both while falling and after landing)
+    if (alien && checkAlienLandingCircle()) {
+      if (currentLevel >= TOTAL_LEVELS) {
+        gameState = State.WIN;
+      } else {
+        gameState = State.LEVEL_COMPLETE;
       }
+      displayWinScreen();   // plays success sound + logs
+      return;
+    }
 
-      player.vy += GRAVITY * dt;
-      player.x += player.vx * dt;
-      player.y += player.vy * dt;
+    // 2. Before alien lands: trampoline can bounce you, but no death
+    if (!alienLanded) {
+      checkTrampolineCollision(); // no death yet
+    } else {
+      // 3. After alien lands: run a grace window
+      alienLandingGraceTimer += dt;
 
-      // Soft ceiling
-      if (player.y < CEILING_Y) {
-        player.y = CEILING_Y;
-        if (player.vy < 0) player.vy = 0;
-      }
-
-      // Horizontal bounds
-      if (player.x < player.radius) {
-        player.x = player.radius;
-        if (player.vx < 0) player.vx = 0;
-      }
-      if (player.x > W - player.radius) {
-        player.x = W - player.radius;
-        if (player.vx > 0) player.vx = 0;
-      }
-
-      // Fall out of world
-      if (player.y > H + player.radius) {
-        loseLife('You fell out of bounds.');
-        return;
-      }
-
-      // Suction beam (PLAYING only)
-      if (gameState === State.PLAYING && player.y < ALIEN_SUCTION_Y && alien) {
-        const dx = Math.abs(player.x - alien.x);
-        if (dx <= ALIEN_BEAM_HALF_WIDTH) {
-          loseLife('You got caught in the alien suction beam!');
-          return;
-        }
-      }
-
-      if (gameState === State.PLAYING) {
-        if (checkTrampolineCollision()) {
-          bounceOnTrampoline();
-        }
-        
-        // CHECK FOR DEATH VS INVINCIBILITY
-        if (!isInvincible && (checkAsteroidCollision() || checkHuskCollision() || checkProjectileCollision())) {
-          loseLife('You hit an obstacle.');
-          return;
-        }
-        
-        // Check for collecting hearts
-        if (checkHeartCollision()) {
-          // Logic handled inside checkHeartCollision
-        }
-        if (checkStarCollision()) {
-          // Logic handled inside checkStarCollision
-        }
-      } else if (gameState === State.POST_TIMER) {
-        // 1. WIN condition: landing on the alien
-        if (alien && checkAlienLandingCircle()) {
-          if (currentLevel >= TOTAL_LEVELS) {
-            gameState = State.WIN;
-          } else {
-            gameState = State.LEVEL_COMPLETE;
-          }
-          displayWinScreen();   // plays success sound + logs
-          return;
-        }
-
-        // 2. Handle Trampoline/Ground collision (No death while alien is falling).
-        if (!alienLanded) {
-          checkTrampolineCollision(); // no death yet
-        } else {
-          if (checkTrampolineCollision() || player.y > H - 5) {
-            loseLife('You missed the alien landing and hit the ground/trampoline.');
-          }
+      // During grace, you can still try to land on the alien (handled above).
+      // After grace, touching ground/trampoline or falling off is a miss.
+      if (alienLandingGraceTimer > ALIEN_LANDING_GRACE) {
+        if (checkTrampolineCollision() || player.y > H - 5) {
+          loseLife('You missed the alien landing and hit the ground/trampoline.');
         }
       }
     }
+  }
+}
 
     function circleRectCollision(cx, cy, cr, rx, ry, rw, rh) {
       const closestX = Math.max(rx, Math.min(cx, rx + rw));
@@ -1086,68 +1104,82 @@
       alien.vy = 260; 
       alien.restingY = trampoline.y - trampoline.height / 2 - size * 0.4;
       alienLanded = false;
+      alienLandingGraceTimer = 0;
 
       // Ensure the player is not still rocketing upward
       player.vy = Math.max(0, player.vy);
     }
 
-    function updateAlien(dt) {
-      if (!alien) return;
-      const cfg = levelConfigs[currentLevel - 1];
+ function updateAlien(dt) {
+  if (!alien) return;
+  const cfg = levelConfigs[currentLevel - 1];
 
-      if (gameState === State.POST_TIMER) {
-        if (!alienLanded && alien.y < alien.restingY) {
-          // Alien fall speed (slowed for fairness: GRAVITY * 0.1)
-          alien.vy += GRAVITY * 0.1 * dt; 
-          alien.y += alien.vy * dt;
+  if (gameState === State.POST_TIMER) {
+    if (!alienLanded && alien.y < alien.restingY) {
+      // Alien fall speed (slowed for fairness: GRAVITY * 0.1)
+      alien.vy += GRAVITY * 0.1 * dt; 
+      alien.y += alien.vy * dt;
 
-          if (alien.y >= alien.restingY) {
-            // Snap to resting position
-            alien.y = alien.restingY;
-            alien.vy = 0;
-            alienLanded = true;
+      if (alien.y >= alien.restingY) {
+        // Snap to resting position
+        alien.y = alien.restingY;
+        alien.vy = 0;
+        alienLanded = true;
+        alienLandingGraceTimer = 0; // 👈 start grace window
 
-            // At the moment the alien lands, decide WIN vs MISS
-            if (checkAlienLandingCircle()) {
-              // Player is overlapping alien => WIN
-              if (currentLevel >= TOTAL_LEVELS) {
-                gameState = State.WIN;
-              } else {
-                gameState = State.LEVEL_COMPLETE;
-              }
-              displayWinScreen();
-            } else {
-              // Player is NOT overlapping => MISS
-              loseLife('You missed the alien landing and the alien hit the ground.');
-            }
-          }
-        }
-      } else if (gameState === State.PLAYING || gameState === State.WAITING) {
-        alien.y = 25;
-        const speed = cfg.alienSpeedTop;
-        if (speed > 0) {
-          alien.x += alienDir * speed * dt;
-          const margin = 60;
-          if (alien.x < margin) {
-            alien.x = margin;
-            alienDir *= -1;
-          } else if (alien.x > W - margin) {
-            alien.x = W - margin;
-            alienDir *= -1;
-          }
-        }
-        // Fire projectiles during PLAYING state
-        if (gameState === State.PLAYING) {
-          fireProjectile(dt);
-        }
+        // ❌ OLD logic removed:
+        // if (checkAlienLandingCircle()) { ...win... } else { loseLife(...) }
+        // We now let updatePlayer handle win/lose over a short window.
       }
     }
-
-    function checkAlienLandingCircle() {
-      if (!alien) return false;
-      const alienRadius = alien.size * 0.7;
-      return circleCircleCollision(player.x, player.y, player.radius, alien.x, alien.y, alienRadius);
+  } else if (gameState === State.PLAYING || gameState === State.WAITING) {
+    alien.y = 25;
+    const speed = cfg.alienSpeedTop;
+    if (speed > 0) {
+      alien.x += alienDir * speed * dt;
+      const margin = 60;
+      if (alien.x < margin) {
+        alien.x = margin;
+        alienDir *= -1;
+      } else if (alien.x > W - margin) {
+        alien.x = W - margin;
+        alienDir *= -1;
+      }
     }
+    // Fire projectiles during PLAYING state
+    if (gameState === State.PLAYING) {
+      fireProjectile(dt);
+    }
+  }
+}
+
+
+function checkAlienLandingCircle() {
+  if (!alien) return false;
+
+  // Make the UFO landing area more forgiving
+  const baseRadius = alien.size * 0.9;     // was 0.7
+  const bonusRadius = 10;                  // extra padding
+  const alienRadius = baseRadius + bonusRadius;
+
+  const landed = circleCircleCollision(
+    player.x, player.y, player.radius,
+    alien.x, alien.y, alienRadius
+  );
+
+  // Extra vertical grace: allow slightly below the center
+  if (!landed) {
+    const dx = Math.abs(player.x - alien.x);
+    const dy = player.y - alien.y;  // positive if player is below alien
+
+    if (dx < alienRadius * 0.8 && dy > 0 && dy < alienRadius * 0.7) {
+      return true;
+    }
+  }
+
+  return landed;
+}
+
 
     function loseLife(reason) {
       if (gameState === State.GAME_OVER || gameState === State.WIN) return;
