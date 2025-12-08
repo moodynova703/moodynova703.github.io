@@ -4,78 +4,86 @@
   <meta charset="UTF-8">
   <title>10-Second Bounce Challenge</title>
   <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      background: #030718;
-      color: #eee;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      overflow: hidden;
-      height: 100%;
-    }
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #030718;
+  color: #eee;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  overflow: hidden;
+  height: 100%;
+}
+
+/* Real viewport height — gets set by JS */
+:root {
+  --app-height: 100vh;
+}
 
 #gameContainer {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: var(--app-height);
   box-sizing: border-box;
   background: radial-gradient(circle at 50% -10%, #1b2148 0%, #050814 55%, #000 100%);
-  position: relative;      /* <-- add this */
+  position: relative; /* needed for absolute touchControls */
 }
 
-    #topBar {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      padding: 8px 16px;
-      box-sizing: border-box;
-      background: linear-gradient(to right, #050814, #0c1230);
-      border-bottom: 1px solid rgba(255,255,255,0.08);
-      font-size: 12px;
-    }
+#topBar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 16px;
+  box-sizing: border-box;
+  background: linear-gradient(to right, #050814, #0c1230);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  font-size: 12px;
+}
 
-    .hudGroup {
-      display: flex;
-      flex-direction: column;
-      padding: 4px 8px;
-      align-items: center;
-      border-radius: 999px;
-      background: rgba(0,0,0,0.35);
-      border: 1px solid rgba(255,255,255,0.06);
-      min-width: 70px;
-    }
-    #timerHudGroup{position: absolute; right:10px;}
+.hudGroup {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 8px;
+  align-items: center;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.35);
+  border: 1px solid rgba(255,255,255,0.06);
+  min-width: 70px;
+}
+#timerHudGroup{position: absolute; right:10px;}
 
-    .hudLabel {
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.18em;
-      color: #9dacff;
-    }
+.hudLabel {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: #9dacff;
+}
 
-    .hudValue {
-      margin-top: 1px;
-      font-size: 21px;
-      font-weight: 600;
-    }
+.hudValue {
+  margin-top: 1px;
+  font-size: 21px;
+  font-weight: 600;
+}
 
-    #controlsText {
-      margin-left: auto;
-      font-size: 11px;
-      color: #c7cdfa;
-      opacity: 0.9;
-      white-space: nowrap;
-    }
+#controlsText {
+  margin-left: auto;
+  font-size: 11px;
+  color: #c7cdfa;
+  opacity: 0.9;
+  white-space: nowrap;
+}
 
-    #gameCanvas {
-      flex: 1;
-      display: block;
-      width: 100%;
-      height: calc(100vh - 48px); /* approx topBar height */
-      border-radius: 0;
-      border: none;
-      background: radial-gradient(circle at center, #050a16 0%, #010208 60%, #000 100%);
-    }
+/* Canvas height = full viewport minus top bar */
+#gameCanvas {
+  flex: 1;
+  display: block;
+  width: 100%;
+  height: calc(var(--app-height) - 48px); /* ~topBar height */
+  border-radius: 0;
+  border: none;
+  background: radial-gradient(circle at center, #050a16 0%, #010208 60%, #000 100%);
+}
+
+/* Touch controls stay pinned above bottom safe area */
 #touchControls {
   position: absolute;
   bottom: 4px;
@@ -106,15 +114,24 @@
     display: flex;
   }
 
-  /* Make canvas fill more tightly on mobile */
+  /* Make canvas shorter to leave room for controls */
   #gameCanvas {
-    height: calc(100vh - 48px - 90px); /* top bar + ~90px for controls */
+    height: calc(var(--app-height) - 48px - 90px); /* top bar + controls */
   }
 }
 
   </style>
 </head>
 <body>
+    <script>
+  // Fix for mobile browsers where 100vh includes hidden UI chrome
+  function setAppHeight() {
+    document.documentElement.style.setProperty('--app-height', window.innerHeight + 'px');
+  }
+  window.addEventListener('resize', setAppHeight);
+  window.addEventListener('orientationchange', setAppHeight);
+  setAppHeight();
+</script>
   <div id="gameContainer">
     <div id="topBar">
       <div class="hudGroup">
@@ -900,7 +917,7 @@ function updateStars(dt) {
         if (!alienLanded) {
           checkTrampolineCollision(); // no death yet
         } else {
-          if (!checkAlienLandingCircle() && (checkTrampolineCollision() || player.y > H + player.radius)) {
+          if (checkTrampolineCollision() || player.y > H - 5) {
             loseLife('You missed the alien landing and hit the ground/trampoline.');
           }
         }
@@ -1020,22 +1037,23 @@ function checkStarCollision() {
 
 
 
-function createAlienForPostTimer() {
-  const size = alienConfig.size;
+    function createAlienForPostTimer() {
+    const size = alienConfig.size;
 
-  trampoline.width = W;
-  trampoline.speed = 0;
-  trampoline.x = W * 0.5;
-  trampoline.dir = 0;
+    // Reset trampoline for landing phase (full width, static)
+    trampoline.width = W;
+    trampoline.speed = 0;
+    trampoline.x = W * 0.5;
+    trampoline.dir = 0;
+    
+    // Initial velocity for alien drop
+    alien.vy = 260; 
+    alien.restingY = trampoline.y - trampoline.height / 2 - size * 0.4;
+    alienLanded = false;
 
-  alien.vy = 260;
-  // instead of: trampoline.y - trampoline.height / 2 - size * 0.4;
-  alien.restingY = H * 0.22;    // slightly below the top, very visible
-  alienLanded = false;
-
-  player.vy = Math.max(0, player.vy);
-}
-
+    // Ensure the player is not still rocketing upward
+    player.vy = Math.max(0, player.vy);
+    }
 
     function updateAlien(dt) {
       if (!alien) return;
