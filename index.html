@@ -167,8 +167,10 @@ html, body {
     const hudLives = document.getElementById('hudLives');
     const hudTimer = document.getElementById('hudTimer'); 
     
-    const W = canvas.width;
-    const H = canvas.height;
+canvas.width = canvas.clientWidth;
+canvas.height = canvas.clientHeight;
+const W = canvas.width;
+const H = canvas.height;
 
     // --- Sprites ---
 const rockImg = new Image();        // moving hazards
