@@ -4,162 +4,184 @@
   <meta charset="UTF-8">
   <title>10-Second Bounce Challenge</title>
   <style>
-html, body {
-  margin: 0;
-  padding: 0;
-  background: #030718;
-  color: #eee;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  overflow: hidden;
-  height: 100%;
-}
+    /* ----------------------------------------------------------
+       GLOBAL RESET & BODY
+    ---------------------------------------------------------- */
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #030718;
+    }
 
-/* Real viewport height — gets set by JS */
-:root {
-  --app-height: 100vh;
-}
+    /* ----------------------------------------------------------
+       MAIN CONTAINER (topBar + canvasWrapper)
+    ---------------------------------------------------------- */
+    #gameContainer {
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;       /* more stable on iPad Safari */
+      overflow: hidden;
+      background: #030718; /* simple behind-topBar background */
+    }
 
-#gameContainer {
-  display: flex;
-  flex-direction: column;
-  height: var(--app-height);
-  box-sizing: border-box;
-  background: radial-gradient(circle at 50% -10%, #1b2148 0%, #050814 55%, #000 100%);
-  position: relative; /* needed for absolute touchControls */
-}
+    /* ----------------------------------------------------------
+       TOP HUD BAR
+    ---------------------------------------------------------- */
+    #topBar {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 8px 16px;
+      background: linear-gradient(to right, #050814, #0c1230);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      font-size: 12px;
+    }
 
-#topBar {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 8px 16px;
-  box-sizing: border-box;
-  background: linear-gradient(to right, #050814, #0c1230);
-  border-bottom: 1px solid rgba(255,255,255,0.08);
-  font-size: 12px;
-}
+    .hudGroup {
+      display: flex;
+      flex-direction: column;
+      padding: 4px 8px;
+      align-items: center;
+      border-radius: 999px;
+      background: rgba(0,0,0,0.35);
+      border: 1px solid rgba(255,255,255,0.06);
+      min-width: 70px;
+    }
 
-.hudGroup {
-  display: flex;
-  flex-direction: column;
-  padding: 4px 8px;
-  align-items: center;
-  border-radius: 999px;
-  background: rgba(0,0,0,0.35);
-  border: 1px solid rgba(255,255,255,0.06);
-  min-width: 70px;
-}
-#timerHudGroup{position: absolute; right:10px;}
+    /* You said to skip HUD layout fixes, so we’re keeping this as-is */
+    #timerHudGroup {
+      position: absolute;
+      right: 10px;
+    }
 
-.hudLabel {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.18em;
-  color: #9dacff;
-}
+    .hudLabel {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: #9dacff;
+    }
 
-.hudValue {
-  margin-top: 1px;
-  font-size: 21px;
-  font-weight: 600;
-}
+    .hudValue {
+      margin-top: 1px;
+      font-size: 21px;
+      font-weight: 600;
+      color:#9dacff;
+    }
 
-#controlsText {
-  margin-left: auto;
-  font-size: 11px;
-  color: #c7cdfa;
-  opacity: 0.9;
-  white-space: nowrap;
-}
+    /* ----------------------------------------------------------
+       CANVAS WRAPPER (scaling container)
+    ---------------------------------------------------------- */
+    #canvasWrapper {
+      position: relative;
+      flex: 1;
 
-/* Canvas height = full viewport minus top bar */
-#gameCanvas {
-  flex: 1;
-  display: block;
-  width: 100%;
-  height: calc(var(--app-height) - 48px); /* ~topBar height */
-  border-radius: 0;
-  border: none;
-  background: radial-gradient(circle at center, #050a16 0%, #010208 60%, #000 100%);
-}
+      display: flex;
+      justify-content: center;
+      align-items: center;
 
-/* Touch controls stay pinned above bottom safe area */
-#touchControls {
-  position: absolute;
-  bottom: 4px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: block;         /* default: hidden on desktop */
-  gap: 16px;
-  z-index: 10;
-}
+      /* themed letterbox background */
+      background: radial-gradient(
+        circle at center,
+        #050a16 0%,
+        #010208 60%,
+        #000000 100%
+      );
 
-#touchControls button {
-  font-size: 24px;
-  padding: 8px 38px 10px 38px;
-  border-radius: 999px;
-  border: 1px solid rgba(196, 200, 212, 0.25);
-  background: rgba(0,0,0,0.65);
-  color: #f5f5ff;
-  min-width: 56px;
-}
+      padding-bottom: env(safe-area-inset-bottom);
 
-#touchControls button:active {
-  transform: scale(0.95);
-}
+      overflow: hidden;
+      min-height: 0; /* Safari flex fix */
+    }
 
-/* Show controls on narrower viewports (phones/tablets) */
-@media (max-width: 900px) {
-  #touchControls {
-    display: flex;
-  }
+    /* ----------------------------------------------------------
+       GAME CANVAS (transparent, scaled proportionally)
+    ---------------------------------------------------------- */
+    #gameCanvas {
+      aspect-ratio: 4 / 3;
+      width: 100%;
+      height: auto;
+      max-height: 100%;
+      display: block;
+      background: transparent;
+    }
 
-  /* Make canvas shorter to leave room for controls */
-  #gameCanvas {
-    height: calc(var(--app-height) - 48px - 90px); /* top bar + controls */
-  }
-}
+    /* ----------------------------------------------------------
+       TOUCH CONTROLS (overlay)
+       (We’re not doing touch-layout refactor now, so this is your
+        current approach, just cleaned slightly.)
+    ---------------------------------------------------------- */
+    #touchControls {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 10;
+      display: none; /* default hidden on desktop */
+    }
 
+    #touchControls button {
+      position: absolute;
+      pointer-events: auto;
+      font-size: 24px;
+      padding: 10px 30px;
+      border-radius: 999px;
+      border: 1px solid rgba(196,200,212,0.25);
+      background: rgba(0,0,0,0.65);
+      color: #f5f5ff;
+      min-width: 56px;
+      bottom: 12px;
+    }
+
+    #btnLeft  { left: 12px; }
+    #btnRight { right: 12px; }
+    #btnStart {
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    /* Show controls on tablets/phones, including iPad landscape */
+    @media (max-width: 900px), (hover: none) and (pointer: coarse) {
+      #touchControls {
+        display: block;
+      }
+    }
   </style>
 </head>
 <body>
-    <script>
-  // Fix for mobile browsers where 100vh includes hidden UI chrome
-  function setAppHeight() {
-    document.documentElement.style.setProperty('--app-height', window.innerHeight + 'px');
-  }
-  window.addEventListener('resize', setAppHeight);
-  window.addEventListener('orientationchange', setAppHeight);
-  setAppHeight();
-</script>
   <div id="gameContainer">
     <div id="topBar">
       <div class="hudGroup">
         <span class="hudLabel">Level</span>
         <span class="hudValue" id="hudLevel">1 / 10</span>
       </div>
-        <div class="hudGroup">
+      <div class="hudGroup">
         <span class="hudLabel">Lives</span>
         <span class="hudValue" id="hudLives">❤️ x5</span>
-        </div>
-      
+      </div>
       <div class="hudGroup" id="timerHudGroup"> 
         <span class="hudLabel">Timer</span>
         <span class="hudValue" id="hudTimer">10.0s</span>
       </div>
     </div>
 
-    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <!-- New wrapper around the canvas -->
+    <div id="canvasWrapper">
+      <canvas id="gameCanvas" width="800" height="600"></canvas>
+    </div>
 
-      <div id="touchControls">
-    <button id="btnLeft">⟵</button>
-    <button id="btnStart">⏯</button>
-    <button id="btnRight">⟶</button>
-  </div>
+    <div id="touchControls">
+      <button id="btnLeft">⬅️</button>
+      <button id="btnStart">▶️</button>
+      <button id="btnRight">➡️</button>
+    </div>
   </div>
 
-<script>
-(function () {
+  <script>
+  (function () {
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
 
@@ -167,30 +189,28 @@ html, body {
     const hudLives = document.getElementById('hudLives');
     const hudTimer = document.getElementById('hudTimer'); 
     
-canvas.width = canvas.clientWidth;
-canvas.height = canvas.clientHeight;
-const W = canvas.width;
-const H = canvas.height;
+    const W = canvas.width;
+    const H = canvas.height;
 
     // --- Sprites ---
-const rockImg = new Image();        // moving hazards
-const asteroidImg = new Image();    // static husks
+    const rockImg = new Image();        // moving hazards
+    const asteroidImg = new Image();    // static husks
 
-let rockImgLoaded = false;
-let asteroidImgLoaded = false;
+    let rockImgLoaded = false;
+    let asteroidImgLoaded = false;
 
-rockImg.src = 'rock.png';           // path to your moving rock sprite
-asteroidImg.src = 'asteroid.png';   // path to your static obstacle sprite
+    rockImg.src = 'rock.png';           // path to your moving rock sprite
+    asteroidImg.src = 'asteroid.png';   // path to your static obstacle sprite
 
-rockImg.onload = () => {
-  rockImgLoaded = true;
-  console.log('rock.png loaded');
-};
+    rockImg.onload = () => {
+      rockImgLoaded = true;
+      console.log('rock.png loaded');
+    };
 
-asteroidImg.onload = () => {
-  asteroidImgLoaded = true;
-  console.log('asteroid.png loaded');
-};
+    asteroidImg.onload = () => {
+      asteroidImgLoaded = true;
+      console.log('asteroid.png loaded');
+    };
 
 
     // Physics constants
@@ -265,31 +285,30 @@ asteroidImg.onload = () => {
     };
 
     // Touch buttons
-const btnLeft  = document.getElementById('btnLeft');
-const btnRight = document.getElementById('btnRight');
-const btnStart = document.getElementById('btnStart');
+    const btnLeft  = document.getElementById('btnLeft');
+    const btnRight = document.getElementById('btnRight');
+    const btnStart = document.getElementById('btnStart');
 
-// Helper: simulate "start" press (ArrowUp/Space behavior)
-function triggerStart() {
-  if (gameState === State.WAITING) {
-    startLevelPlay();
-  } else if (gameState === State.LEVEL_COMPLETE) {
-    if (currentLevel < TOTAL_LEVELS) {
-      resetLevel(currentLevel + 1);
-    } else {
-      gameState = State.WIN;
-      displayWinScreen();
+    // Helper: simulate "start" press (ArrowUp/Space behavior)
+    function triggerStart() {
+      if (gameState === State.WAITING) {
+        startLevelPlay();
+      } else if (gameState === State.LEVEL_COMPLETE) {
+        if (currentLevel < TOTAL_LEVELS) {
+          resetLevel(currentLevel + 1);
+        } else {
+          gameState = State.WIN;
+          displayWinScreen();
+        }
+      } else if (gameState === State.GAME_OVER) {
+        lives = INITIAL_LIVES;
+        resetLevel(1);
+        gameState = State.WAITING;
+      } else if (gameState === State.WIN) {
+        lives = INITIAL_LIVES;
+        resetLevel(1);
+      }
     }
-  } else if (gameState === State.GAME_OVER) {
-    lives = INITIAL_LIVES;
-    resetLevel(1);
-    gameState = State.WAITING;
-  } else if (gameState === State.WIN) {
-    lives = INITIAL_LIVES;
-    resetLevel(1);
-  }
-}
-
 
     window.addEventListener('keydown', (e) => {
       if (e.code === 'ArrowLeft') { keys.left = true; }
@@ -304,89 +323,87 @@ function triggerStart() {
     });
 
     // Prevent accidental double events on some devices
-function prevent(e) { e.preventDefault(); e.stopPropagation(); }
+    function prevent(e) { e.preventDefault(); e.stopPropagation(); }
 
-// LEFT button
-if (btnLeft) {
-  // Touch
-  btnLeft.addEventListener('touchstart', (e) => {
-    prevent(e);
-    keys.left = true;
-  }, { passive: false });
+    // LEFT button
+    if (btnLeft) {
+      // Touch
+      btnLeft.addEventListener('touchstart', (e) => {
+        prevent(e);
+        keys.left = true;
+      }, { passive: false });
 
-  btnLeft.addEventListener('touchend', (e) => {
-    prevent(e);
-    keys.left = false;
-  }, { passive: false });
+      btnLeft.addEventListener('touchend', (e) => {
+        prevent(e);
+        keys.left = false;
+      }, { passive: false });
 
-  // Mouse click (desktop)
-  btnLeft.addEventListener('mousedown', (e) => {
-    e.preventDefault();
-    keys.left = true;
-  });
+      // Mouse click (desktop)
+      btnLeft.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        keys.left = true;
+      });
 
-  btnLeft.addEventListener('mouseup', (e) => {
-    e.preventDefault();
-    keys.left = false;
-  });
+      btnLeft.addEventListener('mouseup', (e) => {
+        e.preventDefault();
+        keys.left = false;
+      });
 
-  // Safety: also stop on mouse leaving the button
-  btnLeft.addEventListener('mouseleave', () => {
-    keys.left = false;
-  });
-}
+      // Safety: also stop on mouse leaving the button
+      btnLeft.addEventListener('mouseleave', () => {
+        keys.left = false;
+      });
+    }
 
-// RIGHT button
-if (btnRight) {
-  btnRight.addEventListener('touchstart', (e) => {
-    prevent(e);
-    keys.right = true;
-  }, { passive: false });
+    // RIGHT button
+    if (btnRight) {
+      btnRight.addEventListener('touchstart', (e) => {
+        prevent(e);
+        keys.right = true;
+      }, { passive: false });
 
-  btnRight.addEventListener('touchend', (e) => {
-    prevent(e);
-    keys.right = false;
-  }, { passive: false });
+      btnRight.addEventListener('touchend', (e) => {
+        prevent(e);
+        keys.right = false;
+      }, { passive: false });
 
-  btnRight.addEventListener('mousedown', (e) => {
-    e.preventDefault();
-    keys.right = true;
-  });
+      btnRight.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        keys.right = true;
+      });
 
-  btnRight.addEventListener('mouseup', (e) => {
-    e.preventDefault();
-    keys.right = false;
-  });
+      btnRight.addEventListener('mouseup', (e) => {
+        e.preventDefault();
+        keys.right = false;
+      });
 
-  btnRight.addEventListener('mouseleave', () => {
-    keys.right = false;
-  });
-}
+      btnRight.addEventListener('mouseleave', () => {
+        keys.right = false;
+      });
+    }
 
-// START / JUMP button
-if (btnStart) {
-  btnStart.addEventListener('touchstart', (e) => {
-    prevent(e);
-    keys.up = true;
-    triggerStart();
-  }, { passive: false });
+    // START / JUMP button
+    if (btnStart) {
+      btnStart.addEventListener('touchstart', (e) => {
+        prevent(e);
+        keys.up = true;
+        triggerStart();
+      }, { passive: false });
 
-  btnStart.addEventListener('touchend', (e) => {
-    prevent(e);
-    keys.up = false;
-  }, { passive: false });
+      btnStart.addEventListener('touchend', (e) => {
+        prevent(e);
+        keys.up = false;
+      }, { passive: false });
 
-  // Click to start / advance / restart
-  btnStart.addEventListener('click', (e) => {
-    e.preventDefault();
-    keys.up = true;
-    triggerStart();
-    // brief "tap" – immediately release
-    setTimeout(() => { keys.up = false; }, 50);
-  });
-}
-
-
+      // Click to start / advance / restart
+      btnStart.addEventListener('click', (e) => {
+        e.preventDefault();
+        keys.up = true;
+        triggerStart();
+        // brief "tap" – immediately release
+        setTimeout(() => { keys.up = false; }, 50);
+      });
+    }
 
     // Simple audio (beeps/hums)
     let audioCtx = null;
@@ -513,17 +530,16 @@ if (btnStart) {
 
     // NEW: Projectile SFX
     function playProjectileFire() {
-        ensureAudio();
-        playBeep(400, 0.05, 'square', 0.1);
+      ensureAudio();
+      playBeep(400, 0.05, 'square', 0.1);
     }
 
     function playHeartCollectSound() {
-        ensureAudio();
-        // A gentle, high-pitched ascending tone
-        playBeep(880, 0.1, 'triangle', 0.15);
-        setTimeout(() => playBeep(1320, 0.1, 'triangle', 0.15), 50);
+      ensureAudio();
+      // A gentle, high-pitched ascending tone
+      playBeep(880, 0.1, 'triangle', 0.15);
+      setTimeout(() => playBeep(1320, 0.1, 'triangle', 0.15), 50);
     }
-
 
     let lastMusicTick = 0;
 
@@ -549,8 +565,8 @@ if (btnStart) {
     let asteroids = [];
     let husks = [];
     let alienProjectiles = []; 
-let hearts = [];      // 1UP pickups
-let stars = [];       // invincibility pickups
+    let hearts = [];      // 1UP pickups
+    let stars = [];       // invincibility pickups
     let alien = null;
     let alienDir = 1;
     let alienLanded = false;  
@@ -559,7 +575,6 @@ let stars = [];       // invincibility pickups
     let alienOpacity = 1.0; 
     let isInvincible = false; // Invincibility state
     let deathEffect = null;  // NEW: separate effect for deaths
-
 
     const alienConfig = {
       size: 28
@@ -637,12 +652,11 @@ let stars = [];       // invincibility pickups
 
     function updateHUD() {
       const cfg = levelConfigs[currentLevel - 1];
-    hudLevel.textContent = `${currentLevel} / ${TOTAL_LEVELS}: ${cfg.theme}`;
+      hudLevel.textContent = `${currentLevel} / ${TOTAL_LEVELS}: ${cfg.theme}`;
       hudLives.textContent = `❤️ x${lives}${isInvincible ? ' ✨' : ''}`; // Show star if invincible
       hudTimer.textContent = `${timer.toFixed(1)}s`; 
       // hudBounces is permanently removed
     }
-
 
     function startLevelPlay() {
       if (gameState === State.WAITING && !player.bouncing) {
@@ -664,105 +678,102 @@ let stars = [];       // invincibility pickups
       return VMIN + (VMAX - VMIN) * (1 - Math.exp(-K * N));
     }
 
-// --- HEART SPAWN LOGIC ---
-function spawnHeart(dt) {
-  if (currentLevel < 5 || gameState !== State.PLAYING || hearts.length > 0) return;
+    // --- HEART SPAWN LOGIC ---
+    function spawnHeart(dt) {
+      if (currentLevel < 5 || gameState !== State.PLAYING || hearts.length > 0) return;
 
-  const probability = dt / 8; 
-  if (Math.random() < probability) {
-      hearts.push({
+      const probability = dt / 8; 
+      if (Math.random() < probability) {
+        hearts.push({
           x: W * 0.2 + Math.random() * W * 0.6,
           y: -30,
           vy: 0,
           radius: 12,
           deadly: false
+        });
+      }
+    }
+
+    function updateHearts(dt) {
+      const HEART_GRAVITY_MULTIPLIER = 0.10; 
+      hearts.forEach(h => {
+        h.vy += GRAVITY * HEART_GRAVITY_MULTIPLIER * dt; 
+        h.y += h.vy * dt;
       });
-  }
-}
+      hearts = hearts.filter(h => h.y < H + h.radius);
+    }
+    // --- END HEART LOGIC ---
 
-function updateHearts(dt) {
-  const HEART_GRAVITY_MULTIPLIER = 0.10; 
-  hearts.forEach(h => {
-      h.vy += GRAVITY * HEART_GRAVITY_MULTIPLIER * dt; 
-      h.y += h.vy * dt;
-  });
-  hearts = hearts.filter(h => h.y < H + h.radius);
-}
-// --- END HEART LOGIC ---
+    // --- STAR SPAWN LOGIC (Invincibility) ---
+    function spawnStar(dt) {
+      // Only spawn after level 5, during PLAYING, and if no star exists
+      if (currentLevel < 6 || gameState !== State.PLAYING || stars.length > 0) return;
 
-// --- STAR SPAWN LOGIC (Invincibility) ---
-function spawnStar(dt) {
-  // Only spawn after level 5, during PLAYING, and if no star exists
-  if (currentLevel < 6 || gameState !== State.PLAYING || stars.length > 0) return;
+      // Roughly 1 star chance every 10 seconds
+      const probability = dt / 10;
+      if (Math.random() < probability) {
+        stars.push({
+          x: W * 0.2 + Math.random() * W * 0.6,
+          y: -30,
+          vy: 0,
+          radius: 12
+        });
+      }
+    }
 
-  // Roughly 1 star chance every 10 seconds
-  const probability = dt / 10;
-  if (Math.random() < probability) {
-    stars.push({
-      x: W * 0.2 + Math.random() * W * 0.6,
-      y: -30,
-      vy: 0,
-      radius: 12
-    });
-  }
-}
+    function updateStars(dt) {
+      const STAR_GRAVITY_MULTIPLIER = 0.15;
 
-function updateStars(dt) {
-  const STAR_GRAVITY_MULTIPLIER = 0.15;
+      stars.forEach(s => {
+        s.vy += GRAVITY * STAR_GRAVITY_MULTIPLIER * dt;
+        s.y += s.vy * dt;
+      });
 
-  stars.forEach(s => {
-    s.vy += GRAVITY * STAR_GRAVITY_MULTIPLIER * dt;
-    s.y += s.vy * dt;
-  });
-
-  stars = stars.filter(s => s.y < H + s.radius);
-}
-// --- END STAR LOGIC ---
-
+      stars = stars.filter(s => s.y < H + s.radius);
+    }
+    // --- END STAR LOGIC ---
 
     // --- PROJECTILE FIRE LOGIC ---
     function fireProjectile(dt) {
-        const cfg = levelConfigs[currentLevel - 1];
-        const rate = cfg.projectileRate;
+      const cfg = levelConfigs[currentLevel - 1];
+      const rate = cfg.projectileRate;
 
-        if (rate <= 0) return;
+      if (rate <= 0) return;
 
-        // Simple time-based check to fire
-        if (performance.now() - lastProjectileTime > (1000 / rate)) {
-            
-            // Calculate direction towards player
-            const dx = player.x - alien.x;
-            const dy = player.y - alien.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            
-            const speed = 300; // Constant speed for projectiles
-            const vx = (dx / dist) * speed;
-            const vy = (dy / dist) * speed;
+      // Simple time-based check to fire
+      if (performance.now() - lastProjectileTime > (1000 / rate)) {
+        // Calculate direction towards player
+        const dx = player.x - alien.x;
+        const dy = player.y - alien.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        const speed = 300; // Constant speed for projectiles
+        const vx = (dx / dist) * speed;
+        const vy = (dy / dist) * speed;
 
-            alienProjectiles.push({
-                x: alien.x,
-                y: alien.y + alien.size * 0.5, // Fire from bottom of alien
-                vx: vx,
-                vy: vy,
-                radius: 6,
-                deadly: true
-            });
-            
-            playProjectileFire();
-            lastProjectileTime = performance.now();
-        }
+        alienProjectiles.push({
+          x: alien.x,
+          y: alien.y + alien.size * 0.5, // Fire from bottom of alien
+          vx: vx,
+          vy: vy,
+          radius: 6,
+          deadly: true
+        });
+        
+        playProjectileFire();
+        lastProjectileTime = performance.now();
+      }
     }
 
     function updateProjectiles(dt) {
-        alienProjectiles.forEach(p => {
-            p.x += p.vx * dt;
-            p.y += p.vy * dt;
-        });
-        // Remove projectiles that leave the screen
-        alienProjectiles = alienProjectiles.filter(p => p.x > -10 && p.x < W + 10 && p.y > -10 && p.y < H + 10);
+      alienProjectiles.forEach(p => {
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+      });
+      // Remove projectiles that leave the screen
+      alienProjectiles = alienProjectiles.filter(p => p.x > -10 && p.x < W + 10 && p.y > -10 && p.y < H + 10);
     }
     // --- END PROJECTILE LOGIC ---
-
 
     function spawnAsteroid(dt) {
       const cfg = levelConfigs[currentLevel - 1];
@@ -825,10 +836,10 @@ function updateStars(dt) {
       
       // When the alien is falling, keep the trampoline stationary and full width
       if (gameState === State.POST_TIMER) {
-         trampoline.width = W;
-         trampoline.speed = 0;
-         trampoline.x = W * 0.5;
-         return;
+        trampoline.width = W;
+        trampoline.speed = 0;
+        trampoline.x = W * 0.5;
+        return;
       }
 
       if (trampoline.speed > 0) {
@@ -870,20 +881,11 @@ function updateStars(dt) {
         if (player.vx > 0) player.vx = 0;
       }
 
-// Fall out of world
-if (player.y > H + player.radius) {
-  // During POST_TIMER while the alien is still falling,
-  // don't kill the player yet – let them wait to be landed on.
-  if (gameState === State.POST_TIMER && !alienLanded) {
-    // Clamp to just above the floor and stop falling
-    player.y = H - player.radius - 2;
-    player.vy = 0;
-  } else {
-    loseLife('You fell out of bounds.');
-    return;
-  }
-}
-
+      // Fall out of world
+      if (player.y > H + player.radius) {
+        loseLife('You fell out of bounds.');
+        return;
+      }
 
       // Suction beam (PLAYING only)
       if (gameState === State.PLAYING && player.y < ALIEN_SUCTION_Y && alien) {
@@ -907,10 +909,10 @@ if (player.y > H + player.radius) {
         
         // Check for collecting hearts
         if (checkHeartCollision()) {
-             // Logic handled inside checkHeartCollision
+          // Logic handled inside checkHeartCollision
         }
         if (checkStarCollision()) {
-             // Logic handled inside checkHeartCollision
+          // Logic handled inside checkStarCollision
         }
       } else if (gameState === State.POST_TIMER) {
         // 1. WIN condition: landing on the alien
@@ -1006,77 +1008,74 @@ if (player.y > H + player.radius) {
       }
       return false;
     }
-    
-function checkHeartCollision() {
-  for (let i = hearts.length - 1; i >= 0; i--) {
-    const h = hearts[i];
-    if (circleCircleCollision(player.x, player.y, player.radius, h.x, h.y, h.radius)) {
 
-      // 1) Extra life only
-      lives++;
+    function checkHeartCollision() {
+      for (let i = hearts.length - 1; i >= 0; i--) {
+        const h = hearts[i];
+        if (circleCircleCollision(player.x, player.y, player.radius, h.x, h.y, h.radius)) {
 
-      playHeartCollectSound();
-      setStatus('BONUS! +1 Life!');
+          // 1) Extra life only
+          lives++;
 
-      hearts.splice(i, 1);   // Remove collected heart
-      updateHUD();           // Reflect new life count
-      return true;
+          playHeartCollectSound();
+          setStatus('BONUS! +1 Life!');
+
+          hearts.splice(i, 1);   // Remove collected heart
+          updateHUD();           // Reflect new life count
+          return true;
+        }
+      }
+      return false;
     }
-  }
-  return false;
-}
 
-function checkStarCollision() {
-  for (let i = stars.length - 1; i >= 0; i--) {
-    const s = stars[i];
-    if (circleCircleCollision(player.x, player.y, player.radius, s.x, s.y, s.radius)) {
+    function checkStarCollision() {
+      for (let i = stars.length - 1; i >= 0; i--) {
+        const s = stars[i];
+        if (circleCircleCollision(player.x, player.y, player.radius, s.x, s.y, s.radius)) {
 
-      // Invincibility for the rest of the level
-      isInvincible = true;
+          // Invincibility for the rest of the level
+          isInvincible = true;
 
-      playHeartCollectSound(); // reuse the nice double tone
-      setStatus('BONUS! Invincibility for this level!');
-      
-      stars.splice(i, 1);
-      updateHUD(); // adds ✨ next to lives
-      return true;
+          playHeartCollectSound(); // reuse the nice double tone
+          setStatus('BONUS! Invincibility for this level!');
+          
+          stars.splice(i, 1);
+          updateHUD(); // adds ✨ next to lives
+          return true;
+        }
+      }
+      return false;
     }
-  }
-  return false;
-}
-
-
-
 
     function createAlienForPostTimer() {
-    const size = alienConfig.size;
+      const size = alienConfig.size;
 
-    // Reset trampoline for landing phase (full width, static)
-    trampoline.width = W;
-    trampoline.speed = 0;
-    trampoline.x = W * 0.5;
-    trampoline.dir = 0;
-    
-    // Initial velocity for alien drop
-    alien.vy = 260; 
-    alien.restingY = trampoline.y - trampoline.height / 2 - size * 0.4;
-    alienLanded = false;
+      // Reset trampoline for landing phase (full width, static)
+      trampoline.width = W;
+      trampoline.speed = 0;
+      trampoline.x = W * 0.5;
+      trampoline.dir = 0;
+      
+      // Initial velocity for alien drop
+      alien.vy = 260; 
+      alien.restingY = trampoline.y - trampoline.height / 2 - size * 0.4;
+      alienLanded = false;
 
-    // Ensure the player is not still rocketing upward
-    player.vy = Math.max(0, player.vy);
+      // Ensure the player is not still rocketing upward
+      player.vy = Math.max(0, player.vy);
     }
 
     function updateAlien(dt) {
       if (!alien) return;
       const cfg = levelConfigs[currentLevel - 1];
 
-        if (gameState === State.POST_TIMER) {
+      if (gameState === State.POST_TIMER) {
         if (!alienLanded && alien.y < alien.restingY) {
-            // Alien fall speed (slowed for fairness: GRAVITY * 0.1)
-            alien.vy += GRAVITY * 0.1 * dt; 
-            alien.y += alien.vy * dt;
+          // Alien fall speed (slowed for fairness: GRAVITY * 0.1)
+          alien.vy += GRAVITY * 0.1 * dt; 
+          alien.y += alien.vy * dt;
 
-            if (alien.y >= alien.restingY) {
+          if (alien.y >= alien.restingY) {
             // Snap to resting position
             alien.y = alien.restingY;
             alien.vy = 0;
@@ -1084,18 +1083,18 @@ function checkStarCollision() {
 
             // At the moment the alien lands, decide WIN vs MISS
             if (checkAlienLandingCircle()) {
-                // Player is overlapping alien => WIN
-                if (currentLevel >= TOTAL_LEVELS) {
+              // Player is overlapping alien => WIN
+              if (currentLevel >= TOTAL_LEVELS) {
                 gameState = State.WIN;
-                } else {
+              } else {
                 gameState = State.LEVEL_COMPLETE;
-                }
-                displayWinScreen();
+              }
+              displayWinScreen();
             } else {
-                // Player is NOT overlapping => MISS
-                loseLife('You missed the alien landing and the alien hit the ground.');
+              // Player is NOT overlapping => MISS
+              loseLife('You missed the alien landing and the alien hit the ground.');
             }
-            }
+          }
         }
       } else if (gameState === State.PLAYING || gameState === State.WAITING) {
         alien.y = 25;
@@ -1113,7 +1112,7 @@ function checkStarCollision() {
         }
         // Fire projectiles during PLAYING state
         if (gameState === State.PLAYING) {
-            fireProjectile(dt);
+          fireProjectile(dt);
         }
       }
     }
@@ -1124,27 +1123,27 @@ function checkStarCollision() {
       return circleCircleCollision(player.x, player.y, player.radius, alien.x, alien.y, alienRadius);
     }
 
- function loseLife(reason) {
-  if (gameState === State.GAME_OVER || gameState === State.WIN) return;
+    function loseLife(reason) {
+      if (gameState === State.GAME_OVER || gameState === State.WIN) return;
 
-  // Death explosion effect (separate from winEffect)
-  deathEffect = {
-    x: player.x,
-    y: player.y,
-    radius: player.radius,
-    time: 0
-  };
+      // Death explosion effect (separate from winEffect)
+      deathEffect = {
+        x: player.x,
+        y: player.y,
+        radius: player.radius,
+        time: 0
+      };
 
-  // Make sure alien stays visible for the next attempt
-  winEffect = null;
-  alienOpacity = 1.0;
+      // Make sure alien stays visible for the next attempt
+      winEffect = null;
+      alienOpacity = 1.0;
 
-  // Special sound for alien suction
-  if (reason && reason.toLowerCase().includes('suction')) {
-    playAlienSuckSound();
-  } else {
-    playDeathSound();
-  }
+      // Special sound for alien suction
+      if (reason && reason.toLowerCase().includes('suction')) {
+        playAlienSuckSound();
+      } else {
+        playDeathSound();
+      }
 
       lives--;
 
@@ -1326,20 +1325,20 @@ function checkStarCollision() {
       ctx.save();
 
       if (isInvincible) {
-          // RAINBOW EFFECT: Draw pulsing rainbow arc around the player
-          const time = performance.now() * 0.001;
-          const baseColor = Math.floor(time * 360 / 0.5); // Cycle every 0.5s
-          
-          ctx.lineWidth = 4;
-          for (let i = 0; i < 6; i++) {
-              const hue = (baseColor + i * 60) % 360;
-              ctx.strokeStyle = `hsl(${hue}, 100%, 70%)`;
-              ctx.beginPath();
-              ctx.arc(player.x, player.y, player.radius + 4, 
-                      i * (Math.PI / 3), (i + 1) * (Math.PI / 3));
-              ctx.stroke();
-          }
-          ctx.lineWidth = 1; // Reset line width
+        // RAINBOW EFFECT: Draw pulsing rainbow arc around the player
+        const time = performance.now() * 0.001;
+        const baseColor = Math.floor(time * 360 / 0.5); // Cycle every 0.5s
+        
+        ctx.lineWidth = 4;
+        for (let i = 0; i < 6; i++) {
+          const hue = (baseColor + i * 60) % 360;
+          ctx.strokeStyle = `hsl(${hue}, 100%, 70%)`;
+          ctx.beginPath();
+          ctx.arc(player.x, player.y, player.radius + 4, 
+            i * (Math.PI / 3), (i + 1) * (Math.PI / 3));
+          ctx.stroke();
+        }
+        ctx.lineWidth = 1; // Reset line width
       }
 
       const glow = ctx.createRadialGradient(
@@ -1361,101 +1360,96 @@ function checkStarCollision() {
       ctx.restore();
     }
 
-function drawAsteroids() {
-  for (let a of asteroids) {
-    ctx.save();
-    ctx.translate(a.x, a.y);
-    ctx.rotate((a.x + a.y) * 0.002);
+    function drawAsteroids() {
+      for (let a of asteroids) {
+        ctx.save();
+        ctx.translate(a.x, a.y);
+        ctx.rotate((a.x + a.y) * 0.002);
 
-    const size = a.size;
+        const size = a.size;
 
-    if (rockImgLoaded) {
-      // Draw rock centered on the asteroid’s position
-      ctx.drawImage(rockImg, -size / 2, -size / 2, size, size);
-    } else {
-      // Fallback while image loads
-      ctx.fillStyle = '#ff3b3b';
-      ctx.fillRect(-size / 2, -size / 2, size, size);
-    }
+        if (rockImgLoaded) {
+          // Draw rock centered on the asteroid’s position
+          ctx.drawImage(rockImg, -size / 2, -size / 2, size, size);
+        } else {
+          // Fallback while image loads
+          ctx.fillStyle = '#ff3b3b';
+          ctx.fillRect(-size / 2, -size / 2, size, size);
+        }
 
-    ctx.restore();
-  }
-}
-
-
- function drawHusks() {
-  for (let h of husks) {
-    const size = h.size * 2; // husks used radius before, so scale a bit
-
-    if (asteroidImgLoaded) {
-      // Draw asteroid centered on its x/y
-      ctx.drawImage(
-        asteroidImg,
-        h.x - size / 2,
-        h.y - size / 2,
-        size,
-        size
-      );
-    } else {
-      // Fallback: old hex shape
-      ctx.fillStyle = '#9ea2b0';
-      ctx.strokeStyle = '#555a68';
-      ctx.lineWidth = 1.4;
-      const sides = 6;
-      const r = h.size;
-      ctx.beginPath();
-      for (let i = 0; i < sides; i++) {
-        const angle = (Math.PI * 2 / sides) * i + Math.PI / 6;
-        const x = h.x + Math.cos(angle) * r;
-        const y = h.y + Math.sin(angle) * r;
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
+        ctx.restore();
       }
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-      ctx.lineWidth = 1;
     }
-  }
-}
 
+    function drawHusks() {
+      for (let h of husks) {
+        const size = h.size * 2; // husks used radius before, so scale a bit
+
+        if (asteroidImgLoaded) {
+          // Draw asteroid centered on its x/y
+          ctx.drawImage(
+            asteroidImg,
+            h.x - size / 2,
+            h.y - size / 2,
+            size,
+            size
+          );
+        } else {
+          // Fallback: old hex shape
+          ctx.fillStyle = '#9ea2b0';
+          ctx.strokeStyle = '#555a68';
+          ctx.lineWidth = 1.4;
+          const sides = 6;
+          const r = h.size;
+          ctx.beginPath();
+          for (let i = 0; i < sides; i++) {
+            const angle = (Math.PI * 2 / sides) * i + Math.PI / 6;
+            const x = h.x + Math.cos(angle) * r;
+            const y = h.y + Math.sin(angle) * r;
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+          ctx.lineWidth = 1;
+        }
+      }
+    }
 
     function drawProjectiles() {
-        ctx.fillStyle = '#f0d4ff'; // White/Purple glow for projectiles
-        for (let p of alienProjectiles) {
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-            ctx.fill();
-        }
+      ctx.fillStyle = '#f0d4ff'; // White/Purple glow for projectiles
+      for (let p of alienProjectiles) {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
-    
-function drawHearts() {
-  ctx.save();
-  ctx.font = '24px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  
-  for (let h of hearts) {
-    ctx.fillText("❤️", h.x, h.y + 2);
-  }
-  ctx.restore();
-}
 
-function drawStars() {
-  ctx.save();
-  ctx.font = '24px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
+    function drawHearts() {
+      ctx.save();
+      ctx.font = '24px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      
+      for (let h of hearts) {
+        ctx.fillText("❤️", h.x, h.y + 2);
+      }
+      ctx.restore();
+    }
 
-  for (let s of stars) {
-    ctx.fillText("⭐", s.x, s.y + 2);
-  }
+    function drawStars() {
+      ctx.save();
+      ctx.font = '24px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
 
-  ctx.restore();
-}
+      for (let s of stars) {
+        ctx.fillText("⭐", s.x, s.y + 2);
+      }
 
-
-
+      ctx.restore();
+    }
 
     function drawAlien() {
       if (!alien) return;
@@ -1495,145 +1489,141 @@ function drawStars() {
       ctx.lineWidth = 1;
     }
 
-function drawLandingTarget() {
-    // Show only when:
-    // - Timer is below 1.0 second during PLAYING  OR
-    // - Alien is falling during POST_TIMER
-    const isPreviewTime = (gameState === State.PLAYING && timer < 1.6);
-    const isFallingPhase = (gameState === State.POST_TIMER && !alienLanded);
+    function drawLandingTarget() {
+      // Show only when:
+      // - Timer is below 1.0 second during PLAYING  OR
+      // - Alien is falling during POST_TIMER
+      const isPreviewTime = (gameState === State.PLAYING && timer < 1.6);
+      const isFallingPhase = (gameState === State.POST_TIMER && !alienLanded);
 
-    if (!isPreviewTime && !isFallingPhase) return;
-    if (!alien) return;
+      if (!isPreviewTime && !isFallingPhase) return;
+      if (!alien) return;
 
-    const indicatorWidth = alien.size * 2.5;
-    const indicatorHeight = 12;
+      const indicatorWidth = alien.size * 2.5;
+      const indicatorHeight = 12;
 
-    // Center indicator to alien X
-    const x = alien.x - indicatorWidth / 2;
+      // Center indicator to alien X
+      const x = alien.x - indicatorWidth / 2;
 
-    // Place just above trampoline surface so it is clearly visible
-    const y = trampoline.y - trampoline.height - 6;
+      // Place just above trampoline surface so it is clearly visible
+      const y = trampoline.y - trampoline.height - 6;
 
-    // Pulse transparency
-    const alpha = 0.5 + Math.sin(performance.now() / 300) * 0.2;
+      // Pulse transparency
+      const alpha = 0.5 + Math.sin(performance.now() / 300) * 0.2;
 
-    ctx.save();
-    ctx.fillStyle = `rgba(180,255,180,${alpha})`;
-    ctx.fillRect(x, y, indicatorWidth, indicatorHeight);
-    ctx.restore();
-}
-
-
-
+      ctx.save();
+      ctx.fillStyle = `rgba(180,255,180,${alpha})`;
+      ctx.fillRect(x, y, indicatorWidth, indicatorHeight);
+      ctx.restore();
+    }
 
     // --- Draw Win Effect ---
     function updateWinEffect(dt) {
-        if (!winEffect) return;
-        winEffect.time += dt;
-        
-        const duration = 0.5;
-        
-        // Update Alien Opacity
-        if (winEffect.time <= duration) {
-            alienOpacity = 1.0 - (winEffect.time / duration); 
-        } else {
-            winEffect = null; // End effect
-            alienOpacity = 0.0; // Ensure alien is invisible
-        }
+      if (!winEffect) return;
+      winEffect.time += dt;
+      
+      const duration = 0.5;
+      
+      // Update Alien Opacity
+      if (winEffect.time <= duration) {
+        alienOpacity = 1.0 - (winEffect.time / duration); 
+      } else {
+        winEffect = null; // End effect
+        alienOpacity = 0.0; // Ensure alien is invisible
+      }
     }
 
     function drawWinEffect() {
-        if (!winEffect) return;
-        
-        const duration = 0.5;
-        const maxRadius = 150;
-        const opacity = 1.0 - (winEffect.time / duration); // Fade out
-        const currentRadius = winEffect.radius + (maxRadius * winEffect.time * 2);
+      if (!winEffect) return;
+      
+      const duration = 0.5;
+      const maxRadius = 150;
+      const opacity = 1.0 - (winEffect.time / duration); // Fade out
+      const currentRadius = winEffect.radius + (maxRadius * winEffect.time * 2);
 
-        ctx.save();
-        ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
-        ctx.lineWidth = 6 * opacity;
+      ctx.save();
+      ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
+      ctx.lineWidth = 6 * opacity;
 
-        // Draw outward expanding circle
-        ctx.beginPath();
-        ctx.arc(winEffect.x, winEffect.y, currentRadius, 0, Math.PI * 2);
-        ctx.stroke();
-        
-        // Flash effect at center
-        ctx.fillStyle = `rgba(255, 255, 255, ${opacity * 0.8})`;
-        ctx.beginPath();
-        ctx.arc(winEffect.x, winEffect.y, winEffect.radius * 2, 0, Math.PI * 2);
-        ctx.fill();
+      // Draw outward expanding circle
+      ctx.beginPath();
+      ctx.arc(winEffect.x, winEffect.y, currentRadius, 0, Math.PI * 2);
+      ctx.stroke();
+      
+      // Flash effect at center
+      ctx.fillStyle = `rgba(255, 255, 255, ${opacity * 0.8})`;
+      ctx.beginPath();
+      ctx.arc(winEffect.x, winEffect.y, winEffect.radius * 2, 0, Math.PI * 2);
+      ctx.fill();
 
-        ctx.restore();
+      ctx.restore();
     }
 
-function updateDeathEffect(dt) {
-  if (!deathEffect) return;
-  deathEffect.time += dt;
-  const duration = 0.4;
-  if (deathEffect.time > duration) {
-    deathEffect = null; // end the effect
-  }
-}
+    function updateDeathEffect(dt) {
+      if (!deathEffect) return;
+      deathEffect.time += dt;
+      const duration = 0.4;
+      if (deathEffect.time > duration) {
+        deathEffect = null; // end the effect
+      }
+    }
 
-function drawDeathEffect() {
-  if (!deathEffect) return;
+    function drawDeathEffect() {
+      if (!deathEffect) return;
 
-  const duration = 0.4;
-  const t = deathEffect.time / duration;
-  const opacity = 1.0 - t;
-  const maxRadius = 120;
-  const currentRadius = deathEffect.radius + maxRadius * t * 2;
+      const duration = 0.4;
+      const t = deathEffect.time / duration;
+      const opacity = 1.0 - t;
+      const maxRadius = 120;
+      const currentRadius = deathEffect.radius + maxRadius * t * 2;
 
-  ctx.save();
-  ctx.strokeStyle = `rgba(255, 120, 120, ${opacity})`;
-  ctx.lineWidth = 5 * opacity;
+      ctx.save();
+      ctx.strokeStyle = `rgba(255, 120, 120, ${opacity})`;
+      ctx.lineWidth = 5 * opacity;
 
-  // Expanding ring
-  ctx.beginPath();
-  ctx.arc(deathEffect.x, deathEffect.y, currentRadius, 0, Math.PI * 2);
-  ctx.stroke();
+      // Expanding ring
+      ctx.beginPath();
+      ctx.arc(deathEffect.x, deathEffect.y, currentRadius, 0, Math.PI * 2);
+      ctx.stroke();
 
-  // Small flash at center
-  ctx.fillStyle = `rgba(255, 200, 200, ${opacity * 0.8})`;
-  ctx.beginPath();
-  ctx.arc(deathEffect.x, deathEffect.y, deathEffect.radius * 1.4, 0, Math.PI * 2);
-  ctx.fill();
+      // Small flash at center
+      ctx.fillStyle = `rgba(255, 200, 200, ${opacity * 0.8})`;
+      ctx.beginPath();
+      ctx.arc(deathEffect.x, deathEffect.y, deathEffect.radius * 1.4, 0, Math.PI * 2);
+      ctx.fill();
 
-  ctx.restore();
-}
+      ctx.restore();
+    }
 
     function drawUIOverlay() {
       ctx.save();
       ctx.font = '14px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
       ctx.textBaseline = 'top';
 
-
       // Big center message only in non-playing states
-let message = '';
-let subMessage = '';
+      let message = '';
+      let subMessage = '';
 
       const cfg = levelConfigs[currentLevel - 1];
 
-  if (gameState === State.WAITING) {
-    drawInstructions();
-    ctx.restore();
-    return;
-  } else if (gameState === State.LEVEL_COMPLETE) {
-    message = `LEVEL ${currentLevel} COMPLETE!`;
-    subMessage = (currentLevel < TOTAL_LEVELS)
-      ? `Press SPACE or ↑ for Level ${currentLevel + 1}.`
-      : 'You beat all levels!';
-  } else if (gameState === State.GAME_OVER) {
-    message = 'GAME OVER';
-    subMessage = 'Press SPACE or ↑ to restart from Level 1.';
-  } else if (gameState === State.WIN) {
-    // ✅ Use the custom final win screen and bail out
-    drawFinalWinScreen();
-    ctx.restore();
-    return;
-  }
+      if (gameState === State.WAITING) {
+        drawInstructions();
+        ctx.restore();
+        return;
+      } else if (gameState === State.LEVEL_COMPLETE) {
+        message = `LEVEL ${currentLevel} COMPLETE!`;
+        subMessage = (currentLevel < TOTAL_LEVELS)
+          ? `Press SPACE or ↑ for Level ${currentLevel + 1}.`
+          : 'You beat all levels!';
+      } else if (gameState === State.GAME_OVER) {
+        message = 'GAME OVER';
+        subMessage = 'Press SPACE or ↑ to restart from Level 1.';
+      } else if (gameState === State.WIN) {
+        // ✅ Use the custom final win screen and bail out
+        drawFinalWinScreen();
+        ctx.restore();
+        return;
+      }
 
       if (message) {
         ctx.textAlign = 'center';
@@ -1663,121 +1653,118 @@ let subMessage = '';
       ctx.restore();
     }
 
-    // Add this function below drawUIOverlay (around line 1080)
-
-function drawInstructions() {
-    if (gameState !== State.WAITING || currentLevel !== 1) return;
-    
-    ctx.save();
-    ctx.textAlign = 'center';
-    
-    const rules = [
+    function drawInstructions() {
+      if (gameState !== State.WAITING || currentLevel !== 1) return;
+      
+      ctx.save();
+      ctx.textAlign = 'center';
+      
+      const rules = [
         "Survive for 10 seconds without hitting objects or the UFO (purple area).",
         "Use Left/Right arrows (← →) to navigate.",
         "Each bounce gets higher so be careful."
-    ];
-    
-    const boxWidth = 520;
-    const boxHeight = 200;
-    const boxX = W / 2 - boxWidth / 2;
-    const boxY = H / 2 - boxHeight / 2;
+      ];
+      
+      const boxWidth = 520;
+      const boxHeight = 200;
+      const boxX = W / 2 - boxWidth / 2;
+      const boxY = H / 2 - boxHeight / 2;
 
-    // Draw background box
-    ctx.fillStyle = 'rgba(0,0,0,0.65)';
-    ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
-    ctx.strokeStyle = 'rgba(255,255,255,0.18)';
-    ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
+      // Draw background box
+      ctx.fillStyle = 'rgba(0,0,0,0.65)';
+      ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+      ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+      ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
 
-    // Title
-    ctx.fillStyle = '#ffe8a9';
-    ctx.font = '22px system-ui';
-    ctx.fillText("HOW TO PLAY", W / 2, boxY + 20);
+      // Title
+      ctx.fillStyle = '#ffe8a9';
+      ctx.font = '22px system-ui';
+      ctx.fillText("HOW TO PLAY", W / 2, boxY + 20);
 
-    // Rules
-    ctx.textAlign = 'left';
-    ctx.font = '14px system-ui';
-    ctx.fillStyle = '#c5ccff';
-    
-    rules.forEach((rule, index) => {
+      // Rules
+      ctx.textAlign = 'left';
+      ctx.font = '14px system-ui';
+      ctx.fillStyle = '#c5ccff';
+      
+      rules.forEach((rule, index) => {
         ctx.fillText(rule, boxX + 30, boxY + 55 + index * 24);
-    });
+      });
 
-    // Start prompt
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#3ef19e';
-    ctx.font = '16px system-ui';
-    ctx.fillText("PRESS ↑ ARROW TO START", W / 2, boxY + boxHeight - 30);
+      // Start prompt
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#3ef19e';
+      ctx.font = '16px system-ui';
+      ctx.fillText("PRESS ↑ ARROW TO START", W / 2, boxY + boxHeight - 30);
 
-    ctx.restore();
-}
+      ctx.restore();
+    }
 
-function drawFinalWinScreen() {
-  if (gameState !== State.WIN) return;
+    function drawFinalWinScreen() {
+      if (gameState !== State.WIN) return;
 
-  ctx.save();
-  ctx.textAlign = 'center';
+      ctx.save();
+      ctx.textAlign = 'center';
 
-  // Dimmed full-screen backdrop
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
-  ctx.fillRect(0, 0, W, H);
+      // Dimmed full-screen backdrop
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+      ctx.fillRect(0, 0, W, H);
 
-  // Glowy center card
-  const boxWidth  = 520;
-  const boxHeight = 260;
-  const boxX = W / 2 - boxWidth / 2;
-  const boxY = H / 2 - boxHeight / 2;
+      // Glowy center card
+      const boxWidth  = 520;
+      const boxHeight = 260;
+      const boxX = W / 2 - boxWidth / 2;
+      const boxY = H / 2 - boxHeight / 2;
 
-  // Outer glow-ish background
-  const grd = ctx.createLinearGradient(boxX, boxY, boxX + boxWidth, boxY + boxHeight);
-  grd.addColorStop(0, 'rgba(60, 255, 180, 0.18)');
-  grd.addColorStop(1, 'rgba(140, 180, 255, 0.28)');
-  ctx.fillStyle = grd;
-  ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+      // Outer glow-ish background
+      const grd = ctx.createLinearGradient(boxX, boxY, boxX + boxWidth, boxY + boxHeight);
+      grd.addColorStop(0, 'rgba(60, 255, 180, 0.18)');
+      grd.addColorStop(1, 'rgba(140, 180, 255, 0.28)');
+      ctx.fillStyle = grd;
+      ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
 
-  // Inner dark panel
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
-  ctx.fillRect(boxX + 6, boxY + 6, boxWidth - 12, boxHeight - 12);
+      // Inner dark panel
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+      ctx.fillRect(boxX + 6, boxY + 6, boxWidth - 12, boxHeight - 12);
 
-  ctx.strokeStyle = 'rgba(255,255,255,0.16)';
-  ctx.lineWidth = 1.5;
-  ctx.strokeRect(boxX + 6.5, boxY + 6.5, boxWidth - 13, boxHeight - 13);
+      ctx.strokeStyle = 'rgba(255,255,255,0.16)';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(boxX + 6.5, boxY + 6.5, boxWidth - 13, boxHeight - 13);
 
-  // Title
-  ctx.fillStyle = '#3ef19e';
-  ctx.font = '26px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-  ctx.fillText('NEBULA GAUNTLET CLEARED!', W / 2, boxY + 38);
+      // Title
+      ctx.fillStyle = '#3ef19e';
+      ctx.font = '26px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+      ctx.fillText('NEBULA GAUNTLET CLEARED!', W / 2, boxY + 38);
 
-  // Sub-title
-  ctx.fillStyle = '#ffe8a9';
-  ctx.font = '16px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-  ctx.fillText(`You survived all ${TOTAL_LEVELS} levels.`, W / 2, boxY + 70);
+      // Sub-title
+      ctx.fillStyle = '#ffe8a9';
+      ctx.font = '16px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+      ctx.fillText(`You survived all ${TOTAL_LEVELS} levels.`, W / 2, boxY + 70);
 
-  // Stats row
-  ctx.font = '14px system-ui';
-  ctx.fillStyle = '#c5ccff';
-  ctx.fillText(`Lives remaining: ${lives}`, W / 2, boxY + 104);
-  ctx.fillText('Alien evasions mastered. Bounce control: certified.', W / 2, boxY + 128);
+      // Stats row
+      ctx.font = '14px system-ui';
+      ctx.fillStyle = '#c5ccff';
+      ctx.fillText(`Lives remaining: ${lives}`, W / 2, boxY + 104);
+      ctx.fillText('Alien evasions mastered. Bounce control: certified.', W / 2, boxY + 128);
 
-  // Little bullet list of “feats”
-  const feats = [
-    '• Dodged rocks, asteroids, beams, and projectiles',
-    '• Timed the final landings on a moving UFO',
-    '• Collected powerups and survived the gauntlet'
-  ];
-  ctx.textAlign = 'left';
-  feats.forEach((line, i) => {
-    ctx.fillText(line, boxX + 40, boxY + 160 + i * 18);
-  });
+      // Little bullet list of “feats”
+      const feats = [
+        '• Dodged rocks, asteroids, beams, and projectiles',
+        '• Timed the final landings on a moving UFO',
+        '• Collected powerups and survived the gauntlet'
+      ];
+      ctx.textAlign = 'left';
+      feats.forEach((line, i) => {
+        ctx.fillText(line, boxX + 40, boxY + 160 + i * 18);
+      });
 
-  // Restart prompt
-  ctx.textAlign = 'center';
-  ctx.fillStyle = '#3ef19e';
-  ctx.font = '15px system-ui';
-  ctx.fillText('PRESS ↑ OR SPACE TO PLAY AGAIN', W / 2, boxY + boxHeight - 28);
+      // Restart prompt
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#3ef19e';
+      ctx.font = '15px system-ui';
+      ctx.fillText('PRESS ↑ OR SPACE TO PLAY AGAIN', W / 2, boxY + boxHeight - 28);
 
-  ctx.restore();
-}
-
+      ctx.restore();
+    }
 
     function gameLoop(timestamp) {
       if (!lastTimestamp) {
@@ -1825,7 +1812,7 @@ function drawFinalWinScreen() {
       drawAsteroids();
       drawProjectiles();
       drawHearts();
-      drawStars()
+      drawStars();
       drawTrampoline();
       drawLandingTarget(); // Draw the landing guide
       drawAlien();
