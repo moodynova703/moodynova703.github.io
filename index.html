@@ -885,15 +885,19 @@ const ALIEN_LANDING_GRACE = 0.40;     // NEW: ~0.4s grace window
     }
 
 function updatePlayer(dt) {
-  if (keys.left) player.vx -= AX * dt;
+  // Horizontal input
+  if (keys.left)  player.vx -= AX * dt;
   if (keys.right) player.vx += AX * dt;
+
+  // Damping above midline
   if (!keys.left && !keys.right && player.y < MIDLINE_Y) {
     player.vx *= (1 - DAMPING * dt);
   }
 
+  // Gravity + integration
   player.vy += GRAVITY * dt;
-  player.x += player.vx * dt;
-  player.y += player.vy * dt;
+  player.x  += player.vx * dt;
+  player.y  += player.vy * dt;
 
   // Soft ceiling
   if (player.y < CEILING_Y) {
@@ -911,13 +915,16 @@ function updatePlayer(dt) {
     if (player.vx > 0) player.vx = 0;
   }
 
-  // Fall out of world
-  if (player.y > H + player.radius) {
-    loseLife('You fell out of bounds.');
-    return;
+  // --- GENERIC OUT-OF-BOUNDS ---
+  // Important: DO NOT kill instantly in POST_TIMER; we'll handle that
+  if (gameState !== State.POST_TIMER) {
+    if (player.y > H + player.radius) {
+      loseLife('You fell out of bounds.');
+      return;
+    }
   }
 
-  // Suction beam (PLAYING only)
+  // --- SUCTION BEAM (PLAYING ONLY) ---
   if (gameState === State.PLAYING && player.y < ALIEN_SUCTION_Y && alien) {
     const dx = Math.abs(player.x - alien.x);
     if (dx <= ALIEN_BEAM_HALF_WIDTH) {
@@ -926,72 +933,102 @@ function updatePlayer(dt) {
     }
   }
 
-  // ---------------------------
-  // PLAYING state
-  // ---------------------------
+  // ============================
+  //         PLAYING
+  // ============================
   if (gameState === State.PLAYING) {
     if (checkTrampolineCollision()) {
       bounceOnTrampoline();
     }
 
-    // CHECK FOR DEATH VS INVINCIBILITY
-    if (!isInvincible && (checkAsteroidCollision() || checkHuskCollision() || checkProjectileCollision())) {
-      loseLife('You hit an obstacle.');
-      return;
+    // Death from hazards ONLY in PLAYING, and ONLY if not invincible
+    if (!isInvincible) {
+      if (checkAsteroidCollision() || checkHuskCollision() || checkProjectileCollision()) {
+        loseLife('You hit an obstacle.');
+        return;
+      }
     }
 
     // Powerups
-    if (checkHeartCollision()) {
-      // handled in checkHeartCollision
-    }
-    if (checkStarCollision()) {
-      // handled in checkStarCollision
-    }
+    checkHeartCollision();
+    checkStarCollision();
+    return;
+  }
 
-  // ---------------------------
-  // POST_TIMER state
-  // ---------------------------
-  } else if (gameState === State.POST_TIMER) {
-    // 1. WIN condition: landing on the alien (works both while falling and after landing)
+  // ============================
+  //        POST_TIMER
+  // ============================
+  if (gameState === State.POST_TIMER) {
+    // 1) If alien exists and we overlap: ALWAYS win, no questions asked.
     if (alien && checkAlienLandingCircle()) {
       if (currentLevel >= TOTAL_LEVELS) {
         gameState = State.WIN;
       } else {
         gameState = State.LEVEL_COMPLETE;
       }
-      displayWinScreen();   // plays success sound + logs
+      displayWinScreen();
       return;
     }
 
-    // 2. Before alien lands: trampoline can bounce you, but no death
+    // 2) While alien is still falling down:
+    //    - Trampoline can still bounce you
+    //    - NO deaths at all in this phase (no "miss" yet)
     if (!alienLanded) {
-      checkTrampolineCollision(); // no death yet
-    } else {
-      // 3. After alien lands: run a grace window
-      alienLandingGraceTimer += dt;
-
-      // During grace, you can still try to land on the alien (handled above).
-      // After grace, touching ground/trampoline or falling off is a miss.
-      if (alienLandingGraceTimer > ALIEN_LANDING_GRACE) {
-        // 🔁 Final sanity check: if we're actually overlapping, count as a win
-        if (alien && checkAlienLandingCircle()) {
-          if (currentLevel >= TOTAL_LEVELS) {
-            gameState = State.WIN;
-          } else {
-            gameState = State.LEVEL_COMPLETE;
-          }
-          displayWinScreen();
-          return;
-        }
-
-        // Only now call it a miss
-        if (checkTrampolineCollision() || player.y > H - 5) {
-          loseLife('You missed the alien landing and hit the ground/trampoline.');
-        }
-      }
+      checkTrampolineCollision(); // bounce only, no loseLife
+      return;
     }
+
+    // 3) Alien has landed. Run grace window timer.
+    alienLandingGraceTimer += dt;
+
+    // During grace window, you STILL can win if you overlap the alien.
+    if (alienLandingGraceTimer <= ALIEN_LANDING_GRACE) {
+      // Final check in case we just overlapped after the first test above.
+      if (alien && checkAlienLandingCircle()) {
+        if (currentLevel >= TOTAL_LEVELS) {
+          gameState = State.WIN;
+        } else {
+          gameState = State.LEVEL_COMPLETE;
+        }
+        displayWinScreen();
+        return;
+      }
+      // No death yet during grace, even if you touch trampoline.
+      checkTrampolineCollision();
+      return;
+    }
+
+    // 4) After grace window expires:
+    //    If you are overlapping the alien at all → still win, not die.
+    if (alien && checkAlienLandingCircle()) {
+      if (currentLevel >= TOTAL_LEVELS) {
+        gameState = State.WIN;
+      } else {
+        gameState = State.LEVEL_COMPLETE;
+      }
+      displayWinScreen();
+      return;
+    }
+
+    //    Now, and ONLY now, we consider it a miss:
+    //    - Hitting trampoline
+    //    - Or falling off-screen
+    const hitTrampoline = checkTrampolineCollision();
+    const offBottom     = (player.y > H + player.radius);
+
+    if (hitTrampoline || offBottom) {
+      loseLife('You missed the alien landing and hit the ground/trampoline.');
+      return;
+    }
+
+    return;
   }
+
+  // ============================
+  // Other states: WAITING, LEVEL_COMPLETE, GAME_OVER, WIN
+  // Just let physics settle / idle.
 }
+
 
     function circleRectCollision(cx, cy, cr, rx, ry, rw, rh) {
       const closestX = Math.max(rx, Math.min(cx, rx + rw));
