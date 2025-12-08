@@ -973,6 +973,18 @@ function updatePlayer(dt) {
       // During grace, you can still try to land on the alien (handled above).
       // After grace, touching ground/trampoline or falling off is a miss.
       if (alienLandingGraceTimer > ALIEN_LANDING_GRACE) {
+        // 🔁 Final sanity check: if we're actually overlapping, count as a win
+        if (alien && checkAlienLandingCircle()) {
+          if (currentLevel >= TOTAL_LEVELS) {
+            gameState = State.WIN;
+          } else {
+            gameState = State.LEVEL_COMPLETE;
+          }
+          displayWinScreen();
+          return;
+        }
+
+        // Only now call it a miss
         if (checkTrampolineCollision() || player.y > H - 5) {
           loseLife('You missed the alien landing and hit the ground/trampoline.');
         }
@@ -1158,8 +1170,8 @@ function checkAlienLandingCircle() {
   if (!alien) return false;
 
   // Make the UFO landing area more forgiving
-  const baseRadius = alien.size * 0.9;     // was 0.7
-  const bonusRadius = 10;                  // extra padding
+  const baseRadius = alien.size * 1.0;     // was 0.7
+  const bonusRadius = 16;                  // extra padding
   const alienRadius = baseRadius + bonusRadius;
 
   const landed = circleCircleCollision(
@@ -1826,63 +1838,68 @@ function checkAlienLandingCircle() {
       ctx.restore();
     }
 
-    function gameLoop(timestamp) {
-      if (!lastTimestamp) {
-        lastTimestamp = timestamp;
-        requestAnimationFrame(gameLoop);
-        return;
-      }
-      const dt = Math.min((timestamp - lastTimestamp) / 1000, 0.033);
-      lastTimestamp = timestamp;
+ function gameLoop(timestamp) {
+  if (!lastTimestamp) {
+    lastTimestamp = timestamp;
+    requestAnimationFrame(gameLoop);
+    return;
+  }
+  const dt = Math.min((timestamp - lastTimestamp) / 1000, 0.033);
+  lastTimestamp = timestamp;
 
-      if (gameState === State.PLAYING) {
-        handleTimerAndMusic(dt);
-        spawnAsteroid(dt);
-        updateAsteroids(dt);
-        updateTrampoline(dt);
-        updatePlayer(dt);
-        updateAlien(dt);
-        handleAlienThreatAudio();
-        updateProjectiles(dt);
-        spawnHeart(dt);
-        updateHearts(dt);
-        spawnStar(dt);
-        updateStars(dt);
-      } else if (gameState === State.POST_TIMER) {
-        handleTimerAndMusic(dt);
-        updateTrampoline(dt);
-        updatePlayer(dt);
-        updateAlien(dt);
-      } else if (
-        gameState === State.WAITING ||
-        gameState === State.LEVEL_COMPLETE ||
-        gameState === State.GAME_OVER ||
-        gameState === State.WIN
-      ) {
-        updateTrampoline(dt);
-        updateAlien(dt);
-      }
-      
-      updateWinEffect(dt); // Update Win effect globally
-      updateDeathEffect(dt);
+  if (gameState === State.PLAYING) {
+    handleTimerAndMusic(dt);
+    spawnAsteroid(dt);
+    updateAsteroids(dt);
+    updateTrampoline(dt);
+    updatePlayer(dt);
+    updateAlien(dt);
+    handleAlienThreatAudio();
+    updateProjectiles(dt);
+    spawnHeart(dt);
+    updateHearts(dt);
+    spawnStar(dt);
+    updateStars(dt);
 
-      drawBackground();
-      drawSuctionBeam();
-      drawHusks();
-      drawAsteroids();
-      drawProjectiles();
-      drawHearts();
-      drawStars();
-      drawTrampoline();
-      drawLandingTarget(); // Draw the landing guide
-      drawAlien();
-      drawPlayer();
-      drawWinEffect(); // Draw the visual blast
-      drawDeathEffect();
-      drawUIOverlay();
+  } else if (gameState === State.POST_TIMER) {
+    handleTimerAndMusic(dt);
 
-      requestAnimationFrame(gameLoop);
-    }
+    // ✅ Move the alien first so the player uses the latest position
+    updateAlien(dt);
+    updateTrampoline(dt);
+    updatePlayer(dt);
+
+  } else if (
+    gameState === State.WAITING ||
+    gameState === State.LEVEL_COMPLETE ||
+    gameState === State.GAME_OVER ||
+    gameState === State.WIN
+  ) {
+    updateTrampoline(dt);
+    updateAlien(dt);
+  }
+
+  updateWinEffect(dt);
+  updateDeathEffect(dt);
+
+  drawBackground();
+  drawSuctionBeam();
+  drawHusks();
+  drawAsteroids();
+  drawProjectiles();
+  drawHearts();
+  drawStars();
+  drawTrampoline();
+  drawLandingTarget();
+  drawAlien();
+  drawPlayer();
+  drawWinEffect();
+  drawDeathEffect();
+  drawUIOverlay();
+
+  requestAnimationFrame(gameLoop);
+}
+
 
     window.addEventListener('keydown', (e) => {
       if (e.code === 'Space' || e.code === 'ArrowUp') {
