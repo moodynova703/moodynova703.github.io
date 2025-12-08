@@ -126,7 +126,7 @@
     #touchControls button {
       position: absolute;
       pointer-events: auto;
-      font-size: 24px;
+      font-size: 44px;
       padding: 10px 30px;
       border-radius: 999px;
       border: 1px solid rgba(196,200,212,0.25);
@@ -147,6 +147,9 @@
     @media (max-width: 900px), (hover: none) and (pointer: coarse) {
       #touchControls {
         display: block;
+      }
+      #touchControls button {
+        font-size: 64px !important;
       }
     }
   </style>
@@ -601,6 +604,18 @@
       console.log('[STATUS]', msg);
     }
 
+    function updateStartButtonVisibility() {
+  if (!btnStart) return;
+
+  // Hide while the game is actively running
+  if (gameState === State.PLAYING || gameState === State.POST_TIMER) {
+    btnStart.style.display = 'none';
+  } else {
+    // Show in menus / between rounds
+    btnStart.style.display = 'block';
+  }
+}
+
     function resetPlayerToTrampolineCenter() {
       const levelCfg = levelConfigs[currentLevel - 1];
       const trampWidth = W * levelCfg.trampWidthRatio;
@@ -642,6 +657,7 @@
 
       gameState = State.WAITING;
       updateHUD();
+      updateStartButtonVisibility();
 
       const cfg = levelConfigs[currentLevel - 1];
       setStatus(
@@ -671,6 +687,7 @@
           `LEVEL ${currentLevel} START! ` +
           `Stay alive for 10 seconds. Avoid red squares, husks, and the alien suction beam.`
         );
+        updateStartButtonVisibility();
       }
     }
 
@@ -1176,6 +1193,7 @@
       alienLanded = false;
       isInvincible = false; // Invincibility ends when life is lost
       updateHUD();
+      updateStartButtonVisibility();
     }
 
     function displayWinScreen() {
@@ -1187,6 +1205,7 @@
         radius: player.radius,
         time: 0
       };
+      updateStartButtonVisibility();
       // ADDED: Start Alien Fade Out
       alienOpacity = 1.0; 
 
@@ -1844,10 +1863,12 @@
           lives = INITIAL_LIVES;
           resetLevel(1);
         }
+        updateStartButtonVisibility();
       }
     });
 
     resetLevel(1);
+    updateStartButtonVisibility();
     requestAnimationFrame(gameLoop);
   })();
   </script>
