@@ -89,7 +89,7 @@ html, body {
   bottom: 4px;
   left: 50%;
   transform: translateX(-50%);
-  display: none;         /* default: hidden on desktop */
+  display: block;         /* default: hidden on desktop */
   gap: 16px;
   z-index: 10;
 }
@@ -868,11 +868,20 @@ function updateStars(dt) {
         if (player.vx > 0) player.vx = 0;
       }
 
-      // Fall out of world
-      if (player.y > H + player.radius) {
-        loseLife('You fell out of bounds.');
-        return;
-      }
+// Fall out of world
+if (player.y > H + player.radius) {
+  // During POST_TIMER while the alien is still falling,
+  // don't kill the player yet – let them wait to be landed on.
+  if (gameState === State.POST_TIMER && !alienLanded) {
+    // Clamp to just above the floor and stop falling
+    player.y = H - player.radius - 2;
+    player.vy = 0;
+  } else {
+    loseLife('You fell out of bounds.');
+    return;
+  }
+}
+
 
       // Suction beam (PLAYING only)
       if (gameState === State.PLAYING && player.y < ALIEN_SUCTION_Y && alien) {
