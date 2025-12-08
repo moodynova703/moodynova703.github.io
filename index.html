@@ -14,13 +14,14 @@
       height: 100%;
     }
 
-    #gameContainer {
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-      box-sizing: border-box;
-      background: radial-gradient(circle at 50% -10%, #1b2148 0%, #050814 55%, #000 100%);
-    }
+#gameContainer {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  box-sizing: border-box;
+  background: radial-gradient(circle at 50% -10%, #1b2148 0%, #050814 55%, #000 100%);
+  position: relative;      /* <-- add this */
+}
 
     #topBar {
       display: flex;
@@ -107,7 +108,7 @@
 
   /* Make canvas fill more tightly on mobile */
   #gameCanvas {
-    height: calc(100vh - 80px);
+    height: calc(100vh - 48px - 90px); /* top bar + ~90px for controls */
   }
 }
 
@@ -899,7 +900,7 @@ function updateStars(dt) {
         if (!alienLanded) {
           checkTrampolineCollision(); // no death yet
         } else {
-          if (checkTrampolineCollision() || player.y > H - 5) {
+          if (!checkAlienLandingCircle() && (checkTrampolineCollision() || player.y > H + player.radius)) {
             loseLife('You missed the alien landing and hit the ground/trampoline.');
           }
         }
@@ -1019,23 +1020,22 @@ function checkStarCollision() {
 
 
 
-    function createAlienForPostTimer() {
-    const size = alienConfig.size;
+function createAlienForPostTimer() {
+  const size = alienConfig.size;
 
-    // Reset trampoline for landing phase (full width, static)
-    trampoline.width = W;
-    trampoline.speed = 0;
-    trampoline.x = W * 0.5;
-    trampoline.dir = 0;
-    
-    // Initial velocity for alien drop
-    alien.vy = 260; 
-    alien.restingY = trampoline.y - trampoline.height / 2 - size * 0.4;
-    alienLanded = false;
+  trampoline.width = W;
+  trampoline.speed = 0;
+  trampoline.x = W * 0.5;
+  trampoline.dir = 0;
 
-    // Ensure the player is not still rocketing upward
-    player.vy = Math.max(0, player.vy);
-    }
+  alien.vy = 260;
+  // instead of: trampoline.y - trampoline.height / 2 - size * 0.4;
+  alien.restingY = H * 0.22;    // slightly below the top, very visible
+  alienLanded = false;
+
+  player.vy = Math.max(0, player.vy);
+}
+
 
     function updateAlien(dt) {
       if (!alien) return;
