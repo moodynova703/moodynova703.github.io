@@ -652,7 +652,7 @@
     let currentWorld = null; // 'space' or 'earth'
     let currentLevel = 1;
     let levelConfigs = spaceLevels; // pointer for current world
-    let earthUnlocked = true;
+    let earthUnlocked = false;
 
     let lives = INITIAL_LIVES;
     let bounceCount = 0;
@@ -1429,7 +1429,7 @@
           offsetX = (W - drawW) / 2;
         }
 
-        const yShift = 80; // move down a bit
+        const yShift = 180; // move down a bit
         ctx.drawImage(img, offsetX, offsetY + yShift, drawW, drawH);
         ctx.restore();
         return;
@@ -1789,7 +1789,7 @@
       const boxWidth  = 520;
       const boxHeight = 260;
       const boxX = W / 2 - boxWidth / 2;
-      const boxY = H / 2 - boxHeight / 2;
+      const boxY = H / 2 - boxHeight / 2 + 140;
 
       // Panel
       ctx.fillStyle = 'rgba(0,0,0,0.8)';
@@ -1800,11 +1800,7 @@
 
       ctx.fillStyle = '#ffe8a9';
       ctx.font = '24px system-ui';
-      ctx.fillText('10-Second Bounce Challenge', W/2, boxY + 32);
-
-      ctx.font = '15px system-ui';
-      ctx.fillStyle = '#c5ccff';
-      ctx.fillText('Select a Land', W/2, boxY + 60);
+      ctx.fillText('Select a Land', W/2, boxY + 32);
 
       const cardWidth  = 220;
       const cardHeight = 120;
@@ -1887,7 +1883,7 @@
         w: cardWidth,
         h: cardHeight,
         borderColor: '#9dacff',
-        title: 'Space Land',
+        title: 'Space',
         subtitle: 'Levels 1–10',
         locked: false
       });
@@ -1901,7 +1897,7 @@
         w: cardWidth,
         h: cardHeight,
         borderColor: earthUnlocked ? '#f7c94a' : 'rgba(255,255,255,0.2)',
-        title: 'Earth Land',
+        title: 'Earth',
         subtitle: 'Levels 11–20',
         locked: !earthUnlocked
       });
