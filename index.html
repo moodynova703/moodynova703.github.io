@@ -50,7 +50,6 @@
       min-width: 70px;
     }
 
-    /* You said to skip HUD layout fixes, so we’re keeping this as-is */
     #timerHudGroup {
       position: absolute;
       right: 10px;
@@ -76,21 +75,16 @@
     #canvasWrapper {
       position: relative;
       flex: 1;
-
       display: flex;
       justify-content: center;
       align-items: center;
-
-      /* themed letterbox background */
       background: radial-gradient(
         circle at center,
         #050a16 0%,
         #010208 60%,
         #000000 100%
       );
-
       padding-bottom: env(safe-area-inset-bottom);
-
       overflow: hidden;
       min-height: 0; /* Safari flex fix */
     }
@@ -109,8 +103,6 @@
 
     /* ----------------------------------------------------------
        TOUCH CONTROLS (overlay)
-       (We’re not doing touch-layout refactor now, so this is your
-        current approach, just cleaned slightly.)
     ---------------------------------------------------------- */
     #touchControls {
       position: absolute;
@@ -180,7 +172,6 @@
       </div>
     </div>
 
-    <!-- New wrapper around the canvas -->
     <div id="canvasWrapper">
       <canvas id="gameCanvas" width="800" height="600"></canvas>
     </div>
@@ -211,8 +202,8 @@
     let rockImgLoaded = false;
     let asteroidImgLoaded = false;
 
-    rockImg.src = 'rock.png';           // path to your moving rock sprite
-    asteroidImg.src = 'asteroid.png';   // path to your static obstacle sprite
+    rockImg.src = 'rock.png';
+    asteroidImg.src = 'asteroid.png';
 
     rockImg.onload = () => {
       rockImgLoaded = true;
@@ -224,21 +215,20 @@
       console.log('asteroid.png loaded');
     };
 
-
     // Physics constants
-    const GRAVITY = 1000;          // units/sec^2
-    const AX = 400;                // horizontal accel
-    const DAMPING = 0.10;          // 10% per second when above midline and no input
+    const GRAVITY = 1000;
+    const AX = 400;
+    const DAMPING = 0.10;
     const MIDLINE_Y = 300;
 
     // Alien suction beam
-    const ALIEN_SUCTION_Y = 50;        // vertical threshold
-    const ALIEN_BEAM_HALF_WIDTH = 70;  // horizontal radius around alien x (beam width ~140px)
+    const ALIEN_SUCTION_Y = 50;
+    const ALIEN_BEAM_HALF_WIDTH = 70;
 
-    // Soft ceiling to keep player on-screen
+    // Soft ceiling
     const CEILING_Y = 10;
 
-    // Bounce formula parameters
+    // Bounce formula
     const VMIN = 500;
     const VMAX = 1500;
     const K = 0.25;
@@ -246,62 +236,91 @@
     // Game parameters
     const TOTAL_LEVELS = 10; 
     const INITIAL_LIVES = 10;
-    const LEVEL_TIME = 10.0;       // seconds
+    const LEVEL_TIME = 10.0;
 
     // Obstacle spawn base rate
     const LAMBDA_BASE = 0.2;
 
-    // Level configurations (EXPANDED TO 10 LEVELS)
+    // Level configurations
     const levelConfigs = [
-      // L1-L4: Full Static Trampoline
       {
-        theme: 'The First Ascent', levelBounces: 4, trampWidthRatio: 1.0, trampSpeed: 0, husks: [], lambdaMultiplier: 1.0, dirMix: { H: 0.80, D: 0.20, V: 0.0 }, alienSpeedTop: 0, projectileRate: 0
+        theme: 'The First Ascent', levelBounces: 4, trampWidthRatio: 1.0, trampSpeed: 0,
+        husks: [], lambdaMultiplier: 1.0,
+        dirMix: { H: 0.80, D: 0.20, V: 0.0 }, alienSpeedTop: 0, projectileRate: 0
       },
       {
-        theme: 'Geo-Drift', levelBounces: 5, trampWidthRatio: 1.0, trampSpeed: 0, husks: [{ x: W * 0.5, y: H * 0.45, size: 26 }], lambdaMultiplier: 1.1, dirMix: { H: 0.75, D: 0.25, V: 0.0 }, alienSpeedTop: 40, projectileRate: 0
+        theme: 'Geo-Drift', levelBounces: 5, trampWidthRatio: 1.0, trampSpeed: 0,
+        husks: [{ x: W * 0.5, y: H * 0.45, size: 26 }],
+        lambdaMultiplier: 1.1,
+        dirMix: { H: 0.75, D: 0.25, V: 0.0 }, alienSpeedTop: 40, projectileRate: 0
       },
       {
-        theme: 'High Orbit Passage', levelBounces: 6, trampWidthRatio: 1.0, trampSpeed: 0, husks: [{ x: W * 0.4, y: H * 0.32, size: 32 }], lambdaMultiplier: 1.25, dirMix: { H: 0.70, D: 0.30, V: 0.0 }, alienSpeedTop: 60, projectileRate: 0
+        theme: 'High Orbit Passage', levelBounces: 6, trampWidthRatio: 1.0, trampSpeed: 0,
+        husks: [{ x: W * 0.4, y: H * 0.32, size: 32 }],
+        lambdaMultiplier: 1.25,
+        dirMix: { H: 0.70, D: 0.30, V: 0.0 }, alienSpeedTop: 60, projectileRate: 0
       },
       {
-        theme: 'The Gravity Well', levelBounces: 7, trampWidthRatio: 1.0, trampSpeed: 0, husks: [{ x: W * 0.5, y: H * 0.25, size: 32 }], lambdaMultiplier: 1.4, dirMix: { H: 0.60, D: 0.35, V: 0.05 }, alienSpeedTop: 80, projectileRate: 0
-      },
-      // L5: Trampoline Shrinks
-      {
-        theme: 'Precision Landing', levelBounces: 7, trampWidthRatio: 0.7, trampSpeed: 0, husks: [{ x: W * 0.35, y: H * 0.40, size: 26 }, { x: W * 0.65, y: H * 0.30, size: 26 }], lambdaMultiplier: 1.6, dirMix: { H: 0.60, D: 0.35, V: 0.05 }, alienSpeedTop: 100, projectileRate: 0
-      },
-      // L6: Trampoline Moves
-      {
-        theme: 'Shifting Ground', levelBounces: 8, trampWidthRatio: 0.5, trampSpeed: 60, husks: [{ x: W * 0.5, y: H * 0.38, size: 30 }], lambdaMultiplier: 1.8, dirMix: { H: 0.60, D: 0.35, V: 0.05 }, alienSpeedTop: 100, projectileRate: 0
-      },
-      // L7-L10: Projectiles Introduced (Medium/High Difficulty)
-      {
-        theme: 'Barrage Initiation', levelBounces: 8, trampWidthRatio: 0.5, trampSpeed: 80, husks: [{ x: W * 0.3, y: H * 0.35, size: 30 }, { x: W * 0.7, y: H * 0.45, size: 30 }], lambdaMultiplier: 2.0, dirMix: { H: 0.55, D: 0.40, V: 0.05 }, alienSpeedTop: 110, projectileRate: 0.1 // 1 per 10s
+        theme: 'The Gravity Well', levelBounces: 7, trampWidthRatio: 1.0, trampSpeed: 0,
+        husks: [{ x: W * 0.5, y: H * 0.25, size: 32 }],
+        lambdaMultiplier: 1.4,
+        dirMix: { H: 0.60, D: 0.35, V: 0.05 }, alienSpeedTop: 80, projectileRate: 0
       },
       {
-        theme: 'Hyper-Drift', levelBounces: 9, trampWidthRatio: 0.4, trampSpeed: 100, husks: [{ x: W * 0.3, y: H * 0.25, size: 30 }, { x: W * 0.7, y: H * 0.45, size: 30 }], lambdaMultiplier: 2.2, dirMix: { H: 0.50, D: 0.45, V: 0.05 }, alienSpeedTop: 120, projectileRate: 0.2 // 1 per 5s
+        theme: 'Precision Landing', levelBounces: 7, trampWidthRatio: 0.7, trampSpeed: 0,
+        husks: [
+          { x: W * 0.35, y: H * 0.40, size: 26 },
+          { x: W * 0.65, y: H * 0.30, size: 26 }
+        ],
+        lambdaMultiplier: 1.6,
+        dirMix: { H: 0.60, D: 0.35, V: 0.05 }, alienSpeedTop: 100, projectileRate: 0
       },
       {
-        theme: 'The Final Traverse', levelBounces: 9, trampWidthRatio: 0.35, trampSpeed: 120, husks: [{ x: W * 0.5, y: H * 0.20, size: 35 }], lambdaMultiplier: 2.5, dirMix: { H: 0.50, D: 0.45, V: 0.05 }, alienSpeedTop: 140, projectileRate: 0.3 // 1 per 3.3s
+        theme: 'Shifting Ground', levelBounces: 8, trampWidthRatio: 0.5, trampSpeed: 60,
+        husks: [{ x: W * 0.5, y: H * 0.38, size: 30 }],
+        lambdaMultiplier: 1.8,
+        dirMix: { H: 0.60, D: 0.35, V: 0.05 }, alienSpeedTop: 100, projectileRate: 0
       },
       {
-        theme: 'Nebula Gauntlet', levelBounces: 10, trampWidthRatio: 0.30, trampSpeed: 140, husks: [{ x: W * 0.5, y: H * 0.15, size: 35 }], lambdaMultiplier: 2.75, dirMix: { H: 0.40, D: 0.50, V: 0.10 }, alienSpeedTop: 160, projectileRate: 0.4 // 1 per 2.5s
+        theme: 'Barrage Initiation', levelBounces: 8, trampWidthRatio: 0.5, trampSpeed: 80,
+        husks: [
+          { x: W * 0.3, y: H * 0.35, size: 30 },
+          { x: W * 0.7, y: H * 0.45, size: 30 }
+        ],
+        lambdaMultiplier: 2.0,
+        dirMix: { H: 0.55, D: 0.40, V: 0.05 }, alienSpeedTop: 110, projectileRate: 0.1
+      },
+      {
+        theme: 'Hyper-Drift', levelBounces: 9, trampWidthRatio: 0.4, trampSpeed: 100,
+        husks: [
+          { x: W * 0.3, y: H * 0.25, size: 30 },
+          { x: W * 0.7, y: H * 0.45, size: 30 }
+        ],
+        lambdaMultiplier: 2.2,
+        dirMix: { H: 0.50, D: 0.45, V: 0.05 }, alienSpeedTop: 120, projectileRate: 0.2
+      },
+      {
+        theme: 'The Final Traverse', levelBounces: 9, trampWidthRatio: 0.35, trampSpeed: 120,
+        husks: [{ x: W * 0.5, y: H * 0.20, size: 35 }],
+        lambdaMultiplier: 2.5,
+        dirMix: { H: 0.50, D: 0.45, V: 0.05 }, alienSpeedTop: 140, projectileRate: 0.3
+      },
+      {
+        theme: 'Nebula Gauntlet', levelBounces: 10, trampWidthRatio: 0.30, trampSpeed: 140,
+        husks: [{ x: W * 0.5, y: H * 0.15, size: 35 }],
+        lambdaMultiplier: 2.75,
+        dirMix: { H: 0.40, D: 0.50, V: 0.10 }, alienSpeedTop: 160, projectileRate: 0.4
       }
     ];
 
     // Input
-    const keys = {
-      left: false,
-      right: false,
-      up: false
-    };
+    const keys = { left: false, right: false, up: false };
 
     // Touch buttons
     const btnLeft  = document.getElementById('btnLeft');
     const btnRight = document.getElementById('btnRight');
     const btnStart = document.getElementById('btnStart');
 
-    // Helper: simulate "start" press (ArrowUp/Space behavior)
     function triggerStart() {
       if (gameState === State.WAITING) {
         startLevelPlay();
@@ -323,23 +342,21 @@
     }
 
     window.addEventListener('keydown', (e) => {
-      if (e.code === 'ArrowLeft') { keys.left = true; }
-      if (e.code === 'ArrowRight') { keys.right = true; }
-      if (e.code === 'ArrowUp' || e.code === 'Space') { keys.up = true; }
+      if (e.code === 'ArrowLeft')  keys.left = true;
+      if (e.code === 'ArrowRight') keys.right = true;
+      if (e.code === 'ArrowUp' || e.code === 'Space') keys.up = true;
     });
 
     window.addEventListener('keyup', (e) => {
-      if (e.code === 'ArrowLeft') { keys.left = false; }
-      if (e.code === 'ArrowRight') { keys.right = false; }
-      if (e.code === 'ArrowUp' || e.code === 'Space') { keys.up = false; }
+      if (e.code === 'ArrowLeft')  keys.left = false;
+      if (e.code === 'ArrowRight') keys.right = false;
+      if (e.code === 'ArrowUp' || e.code === 'Space') keys.up = false;
     });
 
-    // Prevent accidental double events on some devices
     function prevent(e) { e.preventDefault(); e.stopPropagation(); }
 
     // LEFT button
     if (btnLeft) {
-      // Touch
       btnLeft.addEventListener('touchstart', (e) => {
         prevent(e);
         keys.left = true;
@@ -350,7 +367,6 @@
         keys.left = false;
       }, { passive: false });
 
-      // Mouse click (desktop)
       btnLeft.addEventListener('mousedown', (e) => {
         e.preventDefault();
         keys.left = true;
@@ -361,7 +377,6 @@
         keys.left = false;
       });
 
-      // Safety: also stop on mouse leaving the button
       btnLeft.addEventListener('mouseleave', () => {
         keys.left = false;
       });
@@ -407,17 +422,15 @@
         keys.up = false;
       }, { passive: false });
 
-      // Click to start / advance / restart
       btnStart.addEventListener('click', (e) => {
         e.preventDefault();
         keys.up = true;
         triggerStart();
-        // brief "tap" – immediately release
         setTimeout(() => { keys.up = false; }, 50);
       });
     }
 
-    // Simple audio (beeps/hums)
+    // Audio
     let audioCtx = null;
 
     function ensureAudio() {
@@ -470,8 +483,6 @@
       ensureAudio();
       try {
         const now = audioCtx.currentTime;
-
-        // Whooshy downward sweep
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
 
@@ -498,8 +509,6 @@
 
       try {
         const now = audioCtx.currentTime;
-
-        // Bright arpeggio: C5–E5–G5–C6
         const freqs = [523.25, 659.25, 783.99, 1046.5];
 
         freqs.forEach((f, i) => {
@@ -519,11 +528,10 @@
           osc.stop(now + i * 0.12 + 0.32);
         });
 
-        // Soft bass hit underneath
         const bassOsc = audioCtx.createOscillator();
         const bassGain = audioCtx.createGain();
         bassOsc.type = 'sine';
-        bassOsc.frequency.setValueAtTime(130.81, now); // C3
+        bassOsc.frequency.setValueAtTime(130.81, now);
         bassGain.gain.setValueAtTime(0.14, now);
         bassGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.5);
         bassOsc.connect(bassGain);
@@ -540,7 +548,6 @@
       playBeep(120 + 40 * intensity, 0.08, 'sine', 0.02 * intensity);
     }
 
-    // NEW: Projectile SFX
     function playProjectileFire() {
       ensureAudio();
       playBeep(400, 0.05, 'square', 0.1);
@@ -548,7 +555,6 @@
 
     function playHeartCollectSound() {
       ensureAudio();
-      // A gentle, high-pitched ascending tone
       playBeep(880, 0.1, 'triangle', 0.15);
       setTimeout(() => playBeep(1320, 0.1, 'triangle', 0.15), 50);
     }
@@ -577,23 +583,20 @@
     let asteroids = [];
     let husks = [];
     let alienProjectiles = []; 
-    let hearts = [];      // 1UP pickups
-    let stars = [];       // invincibility pickups
+    let hearts = [];
+    let stars = [];
     let alien = null;
     let alienDir = 1;
     let alienLanded = false;  
     let lastProjectileTime = 0; 
     let winEffect = null; 
     let alienOpacity = 1.0; 
-    let isInvincible = false; // Invincibility state
-    let deathEffect = null;  // NEW: separate effect for deaths
-    let alienLandingGraceTimer = 0;       // NEW: time since alien touched down
-const ALIEN_LANDING_GRACE = 0.40;     // NEW: ~0.4s grace window
+    let isInvincible = false;
+    let deathEffect = null;
+    let alienLandingGraceTimer = 0;
+    const ALIEN_LANDING_GRACE = 0.40;
 
-
-    const alienConfig = {
-      size: 28
-    };
+    const alienConfig = { size: 28 };
 
     const State = {
       WAITING: 'waiting',
@@ -612,21 +615,17 @@ const ALIEN_LANDING_GRACE = 0.40;     // NEW: ~0.4s grace window
     let lastTimestamp = null;
 
     function setStatus(msg) {
-      // No DOM status anymore, but keep this for debugging
       console.log('[STATUS]', msg);
     }
 
     function updateStartButtonVisibility() {
-  if (!btnStart) return;
-
-  // Hide while the game is actively running
-  if (gameState === State.PLAYING || gameState === State.POST_TIMER) {
-    btnStart.style.display = 'none';
-  } else {
-    // Show in menus / between rounds
-    btnStart.style.display = 'block';
-  }
-}
+      if (!btnStart) return;
+      if (gameState === State.PLAYING || gameState === State.POST_TIMER) {
+        btnStart.style.display = 'none';
+      } else {
+        btnStart.style.display = 'block';
+      }
+    }
 
     function resetPlayerToTrampolineCenter() {
       const levelCfg = levelConfigs[currentLevel - 1];
@@ -646,7 +645,6 @@ const ALIEN_LANDING_GRACE = 0.40;     // NEW: ~0.4s grace window
 
     function resetLevel(level) {
       currentLevel = level;
-      // Recalculate lambda using the levelConfigs specific multiplier
       const lambdaL = LAMBDA_BASE * levelConfigs[currentLevel - 1].lambdaMultiplier;
       levelConfigs[currentLevel - 1].lambda = lambdaL;
 
@@ -654,7 +652,7 @@ const ALIEN_LANDING_GRACE = 0.40;     // NEW: ~0.4s grace window
       timer = LEVEL_TIME;
       asteroids = [];
       alienProjectiles = []; 
-      hearts = []; // Reset hearts
+      hearts = [];
       stars = [];
       husks = levelConfigs[currentLevel - 1].husks.map(h => ({ ...h }));
       alienDir = 1;
@@ -662,8 +660,8 @@ const ALIEN_LANDING_GRACE = 0.40;     // NEW: ~0.4s grace window
       alienLandingGraceTimer = 0;
       lastProjectileTime = 0;
       winEffect = null; 
-      alienOpacity = 1.0; // Reset Alien visibility
-      isInvincible = false; // Reset invincibility state
+      alienOpacity = 1.0;
+      isInvincible = false;
 
       resetPlayerToTrampolineCenter();
       alien = { x: W * 0.5, y: 25, vy: 0, size: alienConfig.size, restingY: 25 };
@@ -674,17 +672,16 @@ const ALIEN_LANDING_GRACE = 0.40;     // NEW: ~0.4s grace window
 
       const cfg = levelConfigs[currentLevel - 1];
       setStatus(
-        `LEVEL ${currentLevel} – ${cfg.theme}. ` +
-        `Press SPACE or ↑ to start. Survive 10 seconds, then land on the alien!`
+        `LEVEL ${currentLevel} – ${cfg.theme}. Press SPACE or ↑ to start. ` +
+        `Survive 10 seconds, then let the UFO land on you!`
       );
     }
 
     function updateHUD() {
       const cfg = levelConfigs[currentLevel - 1];
       hudLevel.textContent = `${currentLevel} / ${TOTAL_LEVELS}: ${cfg.theme}`;
-      hudLives.textContent = `❤️ x${lives}${isInvincible ? ' ✨' : ''}`; // Show star if invincible
-      hudTimer.textContent = `${timer.toFixed(1)}s`; 
-      // hudBounces is permanently removed
+      hudLives.textContent = `❤️ x${lives}${isInvincible ? ' ✨' : ''}`;
+      hudTimer.textContent = `${timer.toFixed(1)}s`;
     }
 
     function startLevelPlay() {
@@ -698,7 +695,7 @@ const ALIEN_LANDING_GRACE = 0.40;     // NEW: ~0.4s grace window
         gameState = State.PLAYING;
         setStatus(
           `LEVEL ${currentLevel} START! ` +
-          `Stay alive for 10 seconds. Avoid red squares, husks, and the alien suction beam.`
+          `Stay alive for 10 seconds. Avoid hazards and the alien suction beam.`
         );
         updateStartButtonVisibility();
       }
@@ -708,11 +705,10 @@ const ALIEN_LANDING_GRACE = 0.40;     // NEW: ~0.4s grace window
       return VMIN + (VMAX - VMIN) * (1 - Math.exp(-K * N));
     }
 
-    // --- HEART SPAWN LOGIC ---
+    // HEARTS
     function spawnHeart(dt) {
       if (currentLevel < 5 || gameState !== State.PLAYING || hearts.length > 0) return;
-
-      const probability = dt / 8; 
+      const probability = dt / 8;
       if (Math.random() < probability) {
         hearts.push({
           x: W * 0.2 + Math.random() * W * 0.6,
@@ -725,21 +721,17 @@ const ALIEN_LANDING_GRACE = 0.40;     // NEW: ~0.4s grace window
     }
 
     function updateHearts(dt) {
-      const HEART_GRAVITY_MULTIPLIER = 0.10; 
+      const HEART_GRAVITY_MULTIPLIER = 0.10;
       hearts.forEach(h => {
-        h.vy += GRAVITY * HEART_GRAVITY_MULTIPLIER * dt; 
+        h.vy += GRAVITY * HEART_GRAVITY_MULTIPLIER * dt;
         h.y += h.vy * dt;
       });
       hearts = hearts.filter(h => h.y < H + h.radius);
     }
-    // --- END HEART LOGIC ---
 
-    // --- STAR SPAWN LOGIC (Invincibility) ---
+    // STARS (invincibility)
     function spawnStar(dt) {
-      // Only spawn after level 5, during PLAYING, and if no star exists
       if (currentLevel < 6 || gameState !== State.PLAYING || stars.length > 0) return;
-
-      // Roughly 1 star chance every 10 seconds
       const probability = dt / 10;
       if (Math.random() < probability) {
         stars.push({
@@ -753,39 +745,31 @@ const ALIEN_LANDING_GRACE = 0.40;     // NEW: ~0.4s grace window
 
     function updateStars(dt) {
       const STAR_GRAVITY_MULTIPLIER = 0.15;
-
       stars.forEach(s => {
         s.vy += GRAVITY * STAR_GRAVITY_MULTIPLIER * dt;
         s.y += s.vy * dt;
       });
-
       stars = stars.filter(s => s.y < H + s.radius);
     }
-    // --- END STAR LOGIC ---
 
-    // --- PROJECTILE FIRE LOGIC ---
+    // PROJECTILES
     function fireProjectile(dt) {
       const cfg = levelConfigs[currentLevel - 1];
       const rate = cfg.projectileRate;
-
       if (rate <= 0) return;
 
-      // Simple time-based check to fire
       if (performance.now() - lastProjectileTime > (1000 / rate)) {
-        // Calculate direction towards player
         const dx = player.x - alien.x;
         const dy = player.y - alien.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        
-        const speed = 300; // Constant speed for projectiles
+        const speed = 300;
         const vx = (dx / dist) * speed;
         const vy = (dy / dist) * speed;
 
         alienProjectiles.push({
           x: alien.x,
-          y: alien.y + alien.size * 0.5, // Fire from bottom of alien
-          vx: vx,
-          vy: vy,
+          y: alien.y + alien.size * 0.5,
+          vx, vy,
           radius: 6,
           deadly: true
         });
@@ -800,11 +784,12 @@ const ALIEN_LANDING_GRACE = 0.40;     // NEW: ~0.4s grace window
         p.x += p.vx * dt;
         p.y += p.vy * dt;
       });
-      // Remove projectiles that leave the screen
-      alienProjectiles = alienProjectiles.filter(p => p.x > -10 && p.x < W + 10 && p.y > -10 && p.y < H + 10);
+      alienProjectiles = alienProjectiles.filter(p =>
+        p.x > -10 && p.x < W + 10 && p.y > -10 && p.y < H + 10
+      );
     }
-    // --- END PROJECTILE LOGIC ---
 
+    // ASTEROIDS
     function spawnAsteroid(dt) {
       const cfg = levelConfigs[currentLevel - 1];
       const lambda = cfg.lambda;
@@ -846,7 +831,6 @@ const ALIEN_LANDING_GRACE = 0.40;     // NEW: ~0.4s grace window
 
     function updateAsteroids(dt) {
       if (gameState !== State.PLAYING) return;
-
       for (let a of asteroids) {
         a.x += a.vx * dt;
         a.y += a.vy * dt;
@@ -864,7 +848,6 @@ const ALIEN_LANDING_GRACE = 0.40;     // NEW: ~0.4s grace window
       trampoline.speed = cfg.trampSpeed;
       const halfWidth = trampoline.width / 2;
       
-      // When the alien is falling, keep the trampoline stationary and full width
       if (gameState === State.POST_TIMER) {
         trampoline.width = W;
         trampoline.speed = 0;
@@ -884,151 +867,139 @@ const ALIEN_LANDING_GRACE = 0.40;     // NEW: ~0.4s grace window
       }
     }
 
-function updatePlayer(dt) {
-  // Horizontal input
-  if (keys.left)  player.vx -= AX * dt;
-  if (keys.right) player.vx += AX * dt;
+    function updatePlayer(dt) {
+      const prevY = player.y;
 
-  // Damping above midline
-  if (!keys.left && !keys.right && player.y < MIDLINE_Y) {
-    player.vx *= (1 - DAMPING * dt);
-  }
+      // Horizontal input
+      if (keys.left)  player.vx -= AX * dt;
+      if (keys.right) player.vx += AX * dt;
 
-  // Gravity + integration
-  player.vy += GRAVITY * dt;
-  player.x  += player.vx * dt;
-  player.y  += player.vy * dt;
-
-  // Soft ceiling
-  if (player.y < CEILING_Y) {
-    player.y = CEILING_Y;
-    if (player.vy < 0) player.vy = 0;
-  }
-
-  // Horizontal bounds
-  if (player.x < player.radius) {
-    player.x = player.radius;
-    if (player.vx < 0) player.vx = 0;
-  }
-  if (player.x > W - player.radius) {
-    player.x = W - player.radius;
-    if (player.vx > 0) player.vx = 0;
-  }
-
-  // --- GENERIC OUT-OF-BOUNDS ---
-  // Important: DO NOT kill instantly in POST_TIMER; we'll handle that
-  if (gameState !== State.POST_TIMER) {
-    if (player.y > H + player.radius) {
-      loseLife('You fell out of bounds.');
-      return;
-    }
-  }
-
-  // --- SUCTION BEAM (PLAYING ONLY) ---
-  if (gameState === State.PLAYING && player.y < ALIEN_SUCTION_Y && alien) {
-    const dx = Math.abs(player.x - alien.x);
-    if (dx <= ALIEN_BEAM_HALF_WIDTH) {
-      loseLife('You got caught in the alien suction beam!');
-      return;
-    }
-  }
-
-  // ============================
-  //         PLAYING
-  // ============================
-  if (gameState === State.PLAYING) {
-    if (checkTrampolineCollision()) {
-      bounceOnTrampoline();
-    }
-
-    // Death from hazards ONLY in PLAYING, and ONLY if not invincible
-    if (!isInvincible) {
-      if (checkAsteroidCollision() || checkHuskCollision() || checkProjectileCollision()) {
-        loseLife('You hit an obstacle.');
-        return;
+      // Damping above midline
+      if (!keys.left && !keys.right && player.y < MIDLINE_Y) {
+        player.vx *= (1 - DAMPING * dt);
       }
-    }
 
-    // Powerups
-    checkHeartCollision();
-    checkStarCollision();
-    return;
-  }
+      // Gravity + integration
+      player.vy += GRAVITY * dt;
+      player.x  += player.vx * dt;
+      player.y  += player.vy * dt;
 
-  // ============================
-  //        POST_TIMER
-  // ============================
-  if (gameState === State.POST_TIMER) {
-    // 1) If alien exists and we overlap: ALWAYS win, no questions asked.
-    if (alien && checkAlienLandingCircle()) {
-      if (currentLevel >= TOTAL_LEVELS) {
-        gameState = State.WIN;
-      } else {
-        gameState = State.LEVEL_COMPLETE;
+      // Soft ceiling
+      if (player.y < CEILING_Y) {
+        player.y = CEILING_Y;
+        if (player.vy < 0) player.vy = 0;
       }
-      displayWinScreen();
-      return;
-    }
 
-    // 2) While alien is still falling down:
-    //    - Trampoline can still bounce you
-    //    - NO deaths at all in this phase (no "miss" yet)
-    if (!alienLanded) {
-      checkTrampolineCollision(); // bounce only, no loseLife
-      return;
-    }
+      // Horizontal bounds
+      if (player.x < player.radius) {
+        player.x = player.radius;
+        if (player.vx < 0) player.vx = 0;
+      }
+      if (player.x > W - player.radius) {
+        player.x = W - player.radius;
+        if (player.vx > 0) player.vx = 0;
+      }
 
-    // 3) Alien has landed. Run grace window timer.
-    alienLandingGraceTimer += dt;
-
-    // During grace window, you STILL can win if you overlap the alien.
-    if (alienLandingGraceTimer <= ALIEN_LANDING_GRACE) {
-      // Final check in case we just overlapped after the first test above.
-      if (alien && checkAlienLandingCircle()) {
-        if (currentLevel >= TOTAL_LEVELS) {
-          gameState = State.WIN;
-        } else {
-          gameState = State.LEVEL_COMPLETE;
+      // Out-of-bounds (not in POST_TIMER)
+      if (gameState !== State.POST_TIMER) {
+        if (player.y > H + player.radius) {
+          loseLife('You fell out of bounds.');
+          return;
         }
-        displayWinScreen();
+      }
+
+      // Suction beam
+      if (gameState === State.PLAYING && player.y < ALIEN_SUCTION_Y && alien) {
+        const dx = Math.abs(player.x - alien.x);
+        if (dx <= ALIEN_BEAM_HALF_WIDTH) {
+          loseLife('You got caught in the alien suction beam!');
+          return;
+        }
+      }
+
+      // ============================
+      // PLAYING
+      // ============================
+      if (gameState === State.PLAYING) {
+        if (checkTrampolineCollision(prevY)) {
+          bounceOnTrampoline();
+        }
+
+        if (!isInvincible) {
+          if (checkAsteroidCollision() || checkHuskCollision() || checkProjectileCollision()) {
+            loseLife('You hit an obstacle.');
+            return;
+          }
+        }
+
+        checkHeartCollision();
+        checkStarCollision();
         return;
       }
-      // No death yet during grace, even if you touch trampoline.
-      checkTrampolineCollision();
-      return;
-    }
 
-    // 4) After grace window expires:
-    //    If you are overlapping the alien at all → still win, not die.
-    if (alien && checkAlienLandingCircle()) {
-      if (currentLevel >= TOTAL_LEVELS) {
-        gameState = State.WIN;
-      } else {
-        gameState = State.LEVEL_COMPLETE;
+      // ============================
+      // POST_TIMER
+      // ============================
+      if (gameState === State.POST_TIMER) {
+        // 1) If overlap with UFO → win
+        if (alien && checkAlienLandingCircle()) {
+          if (currentLevel >= TOTAL_LEVELS) {
+            gameState = State.WIN;
+          } else {
+            gameState = State.LEVEL_COMPLETE;
+          }
+          displayWinScreen();
+          return;
+        }
+
+        // 2) While alien is still falling, trampoline can bounce, no death
+        if (!alienLanded) {
+          checkTrampolineCollision(prevY);
+          return;
+        }
+
+        // 3) Alien has landed. Run grace window
+        alienLandingGraceTimer += dt;
+
+        if (alienLandingGraceTimer <= ALIEN_LANDING_GRACE) {
+          if (alien && checkAlienLandingCircle()) {
+            if (currentLevel >= TOTAL_LEVELS) {
+              gameState = State.WIN;
+            } else {
+              gameState = State.LEVEL_COMPLETE;
+            }
+            displayWinScreen();
+            return;
+          }
+          checkTrampolineCollision(prevY);
+          return;
+        }
+
+        // 4) After grace: still allow win if overlapping
+        if (alien && checkAlienLandingCircle()) {
+          if (currentLevel >= TOTAL_LEVELS) {
+            gameState = State.WIN;
+          } else {
+            gameState = State.LEVEL_COMPLETE;
+          }
+          displayWinScreen();
+          return;
+        }
+
+        // Now, and ONLY now, consider it a miss
+        const hitTrampoline = checkTrampolineCollision(prevY);
+        const offBottom     = (player.y > H + player.radius);
+
+        if (hitTrampoline || offBottom) {
+          loseLife('You missed the alien landing and hit the ground/trampoline.');
+          return;
+        }
+
+        return;
       }
-      displayWinScreen();
-      return;
+
+      // WAITING / LEVEL_COMPLETE / GAME_OVER / WIN: just let it sit
     }
-
-    //    Now, and ONLY now, we consider it a miss:
-    //    - Hitting trampoline
-    //    - Or falling off-screen
-    const hitTrampoline = checkTrampolineCollision();
-    const offBottom     = (player.y > H + player.radius);
-
-    if (hitTrampoline || offBottom) {
-      loseLife('You missed the alien landing and hit the ground/trampoline.');
-      return;
-    }
-
-    return;
-  }
-
-  // ============================
-  // Other states: WAITING, LEVEL_COMPLETE, GAME_OVER, WIN
-  // Just let physics settle / idle.
-}
-
 
     function circleRectCollision(cx, cy, cr, rx, ry, rw, rh) {
       const closestX = Math.max(rx, Math.min(cx, rx + rw));
@@ -1046,16 +1017,39 @@ function updatePlayer(dt) {
       return distSq <= r * r;
     }
 
-    function checkTrampolineCollision() {
+    function checkTrampolineCollision(prevY) {
       const halfWidth = trampoline.width / 2;
       const rx = trampoline.x - halfWidth;
       const ry = trampoline.y - trampoline.height / 2;
       const rw = trampoline.width;
       const rh = trampoline.height;
-      if (player.vy > 0 && circleRectCollision(player.x, player.y, player.radius, rx, ry, rw, rh)) {
-        player.y = ry - player.radius - 0.5;
+
+      const surfaceY = ry;
+
+      const horizOverlap =
+        (player.x + player.radius > rx) &&
+        (player.x - player.radius < rx + rw);
+
+      // Swept test
+      if (player.vy > 0 && horizOverlap && typeof prevY === 'number') {
+        const prevBottom = prevY + player.radius;
+        const currBottom = player.y + player.radius;
+
+        if (prevBottom <= surfaceY && currBottom >= surfaceY) {
+          player.y = surfaceY - player.radius - 0.5;
+          return true;
+        }
+      }
+
+      // Fallback overlap
+      if (
+        player.vy > 0 &&
+        circleRectCollision(player.x, player.y, player.radius, rx, ry, rw, rh)
+      ) {
+        player.y = surfaceY - player.radius - 0.5;
         return true;
       }
+
       return false;
     }
 
@@ -1106,15 +1100,11 @@ function updatePlayer(dt) {
       for (let i = hearts.length - 1; i >= 0; i--) {
         const h = hearts[i];
         if (circleCircleCollision(player.x, player.y, player.radius, h.x, h.y, h.radius)) {
-
-          // 1) Extra life only
           lives++;
-
           playHeartCollectSound();
           setStatus('BONUS! +1 Life!');
-
-          hearts.splice(i, 1);   // Remove collected heart
-          updateHUD();           // Reflect new life count
+          hearts.splice(i, 1);
+          updateHUD();
           return true;
         }
       }
@@ -1125,15 +1115,11 @@ function updatePlayer(dt) {
       for (let i = stars.length - 1; i >= 0; i--) {
         const s = stars[i];
         if (circleCircleCollision(player.x, player.y, player.radius, s.x, s.y, s.radius)) {
-
-          // Invincibility for the rest of the level
           isInvincible = true;
-
-          playHeartCollectSound(); // reuse the nice double tone
+          playHeartCollectSound();
           setStatus('BONUS! Invincibility for this level!');
-          
           stars.splice(i, 1);
-          updateHUD(); // adds ✨ next to lives
+          updateHUD();
           return true;
         }
       }
@@ -1143,97 +1129,81 @@ function updatePlayer(dt) {
     function createAlienForPostTimer() {
       const size = alienConfig.size;
 
-      // Reset trampoline for landing phase (full width, static)
       trampoline.width = W;
       trampoline.speed = 0;
       trampoline.x = W * 0.5;
       trampoline.dir = 0;
       
-      // Initial velocity for alien drop
       alien.vy = 260; 
       alien.restingY = trampoline.y - trampoline.height / 2 - size * 0.4;
       alienLanded = false;
       alienLandingGraceTimer = 0;
 
-      // Ensure the player is not still rocketing upward
       player.vy = Math.max(0, player.vy);
     }
 
- function updateAlien(dt) {
-  if (!alien) return;
-  const cfg = levelConfigs[currentLevel - 1];
+    function updateAlien(dt) {
+      if (!alien) return;
+      const cfg = levelConfigs[currentLevel - 1];
 
-  if (gameState === State.POST_TIMER) {
-    if (!alienLanded && alien.y < alien.restingY) {
-      // Alien fall speed (slowed for fairness: GRAVITY * 0.1)
-      alien.vy += GRAVITY * 0.1 * dt; 
-      alien.y += alien.vy * dt;
+      if (gameState === State.POST_TIMER) {
+        if (!alienLanded && alien.y < alien.restingY) {
+          alien.vy += GRAVITY * 0.1 * dt; 
+          alien.y += alien.vy * dt;
 
-      if (alien.y >= alien.restingY) {
-        // Snap to resting position
-        alien.y = alien.restingY;
-        alien.vy = 0;
-        alienLanded = true;
-        alienLandingGraceTimer = 0; // 👈 start grace window
-
-        // ❌ OLD logic removed:
-        // if (checkAlienLandingCircle()) { ...win... } else { loseLife(...) }
-        // We now let updatePlayer handle win/lose over a short window.
+          if (alien.y >= alien.restingY) {
+            alien.y = alien.restingY;
+            alien.vy = 0;
+            alienLanded = true;
+            alienLandingGraceTimer = 0;
+          }
+        }
+      } else if (gameState === State.PLAYING || gameState === State.WAITING) {
+        alien.y = 25;
+        const speed = cfg.alienSpeedTop;
+        if (speed > 0) {
+          alien.x += alienDir * speed * dt;
+          const margin = 60;
+          if (alien.x < margin) {
+            alien.x = margin;
+            alienDir *= -1;
+          } else if (alien.x > W - margin) {
+            alien.x = W - margin;
+            alienDir *= -1;
+          }
+        }
+        if (gameState === State.PLAYING) {
+          fireProjectile(dt);
+        }
       }
     }
-  } else if (gameState === State.PLAYING || gameState === State.WAITING) {
-    alien.y = 25;
-    const speed = cfg.alienSpeedTop;
-    if (speed > 0) {
-      alien.x += alienDir * speed * dt;
-      const margin = 60;
-      if (alien.x < margin) {
-        alien.x = margin;
-        alienDir *= -1;
-      } else if (alien.x > W - margin) {
-        alien.x = W - margin;
-        alienDir *= -1;
+
+    function checkAlienLandingCircle() {
+      if (!alien) return false;
+
+      const baseRadius = alien.size * 1.0;
+      const bonusRadius = 16;
+      const alienRadius = baseRadius + bonusRadius;
+
+      const landed = circleCircleCollision(
+        player.x, player.y, player.radius,
+        alien.x, alien.y, alienRadius
+      );
+
+      if (!landed) {
+        const dx = Math.abs(player.x - alien.x);
+        const dy = player.y - alien.y;
+        if (dx < alienRadius * 0.8 && dy > 0 && dy < alienRadius * 0.7) {
+          return true;
+        }
       }
+
+      return landed;
     }
-    // Fire projectiles during PLAYING state
-    if (gameState === State.PLAYING) {
-      fireProjectile(dt);
-    }
-  }
-}
-
-
-function checkAlienLandingCircle() {
-  if (!alien) return false;
-
-  // Make the UFO landing area more forgiving
-  const baseRadius = alien.size * 1.0;     // was 0.7
-  const bonusRadius = 16;                  // extra padding
-  const alienRadius = baseRadius + bonusRadius;
-
-  const landed = circleCircleCollision(
-    player.x, player.y, player.radius,
-    alien.x, alien.y, alienRadius
-  );
-
-  // Extra vertical grace: allow slightly below the center
-  if (!landed) {
-    const dx = Math.abs(player.x - alien.x);
-    const dy = player.y - alien.y;  // positive if player is below alien
-
-    if (dx < alienRadius * 0.8 && dy > 0 && dy < alienRadius * 0.7) {
-      return true;
-    }
-  }
-
-  return landed;
-}
-
 
     function loseLife(reason) {
       if (gameState === State.GAME_OVER || gameState === State.WIN) return;
 
-      // Death explosion effect (separate from winEffect)
       deathEffect = {
         x: player.x,
         y: player.y,
@@ -1241,11 +1211,9 @@ function checkAlienLandingCircle() {
         time: 0
       };
 
-      // Make sure alien stays visible for the next attempt
       winEffect = null;
       alienOpacity = 1.0;
 
-      // Special sound for alien suction
       if (reason && reason.toLowerCase().includes('suction')) {
         playAlienSuckSound();
       } else {
@@ -1253,42 +1221,38 @@ function checkAlienLandingCircle() {
       }
 
       lives--;
-
       const prefix = reason ? `${reason} ` : '';
 
       if (lives <= 0) {
         gameState = State.GAME_OVER;
         setStatus(
-          `${prefix}GAME OVER. ` +
-          `Press SPACE or ↑ to restart from Level 1.`
+          `${prefix}GAME OVER. Press SPACE or ↑ to restart from Level 1.`
         );
       } else {
         gameState = State.WAITING;
         setStatus(
-          `${prefix}You lost a life. ` +
-          `Lives left: ${lives}. Press SPACE or ↑ to retry Level ${currentLevel}.`
+          `${prefix}You lost a life. Lives left: ${lives}. ` +
+          `Press SPACE or ↑ to retry Level ${currentLevel}.`
         );
       }
       
-      // CRITICAL FIX: Re-initialize Alien and other objects immediately
       resetPlayerToTrampolineCenter();
       alien = { x: W * 0.5, y: 25, vy: 0, size: alienConfig.size, restingY: 25 }; 
 
       asteroids = [];
       alienProjectiles = []; 
-      hearts = []; // Reset hearts
+      hearts = [];
       stars = [];
       timer = LEVEL_TIME;
       bounceCount = 0;
       alienLanded = false;
-      isInvincible = false; // Invincibility ends when life is lost
+      isInvincible = false;
       updateHUD();
       updateStartButtonVisibility();
     }
 
     function displayWinScreen() {
       playSuccessSound();
-      // ADDED: Trigger Win Effect upon successful landing
       winEffect = {
         x: player.x,
         y: player.y,
@@ -1296,7 +1260,6 @@ function checkAlienLandingCircle() {
         time: 0
       };
       updateStartButtonVisibility();
-      // ADDED: Start Alien Fade Out
       alienOpacity = 1.0; 
 
       if (gameState === State.WIN) {
@@ -1312,7 +1275,7 @@ function checkAlienLandingCircle() {
         if (timer <= 0) {
           timer = 0;
           gameState = State.POST_TIMER;
-          setStatus('Time up! The alien is falling — land safely on it to complete the level.');
+          setStatus('Time up! The alien is falling — stay under it so it lands on you!');
           createAlienForPostTimer();
         }
       }
@@ -1382,7 +1345,6 @@ function checkAlienLandingCircle() {
       const x = alien.x;
       const top = 0;
       const bottom = ALIEN_SUCTION_Y;
-
       const beamWidth = ALIEN_BEAM_HALF_WIDTH * 2;
 
       const grd = ctx.createLinearGradient(x, top, x, bottom);
@@ -1428,16 +1390,13 @@ function checkAlienLandingCircle() {
     }
 
     function drawPlayer() {
-      // CRITICAL: Do not draw player if winEffect is active (player is dead/exploding)
       if (winEffect || deathEffect) return;
 
       ctx.save();
 
       if (isInvincible) {
-        // RAINBOW EFFECT: Draw pulsing rainbow arc around the player
         const time = performance.now() * 0.001;
-        const baseColor = Math.floor(time * 360 / 0.5); // Cycle every 0.5s
-        
+        const baseColor = Math.floor(time * 360 / 0.5);
         ctx.lineWidth = 4;
         for (let i = 0; i < 6; i++) {
           const hue = (baseColor + i * 60) % 360;
@@ -1447,7 +1406,7 @@ function checkAlienLandingCircle() {
             i * (Math.PI / 3), (i + 1) * (Math.PI / 3));
           ctx.stroke();
         }
-        ctx.lineWidth = 1; // Reset line width
+        ctx.lineWidth = 1;
       }
 
       const glow = ctx.createRadialGradient(
@@ -1478,10 +1437,8 @@ function checkAlienLandingCircle() {
         const size = a.size;
 
         if (rockImgLoaded) {
-          // Draw rock centered on the asteroid’s position
           ctx.drawImage(rockImg, -size / 2, -size / 2, size, size);
         } else {
-          // Fallback while image loads
           ctx.fillStyle = '#ff3b3b';
           ctx.fillRect(-size / 2, -size / 2, size, size);
         }
@@ -1492,10 +1449,9 @@ function checkAlienLandingCircle() {
 
     function drawHusks() {
       for (let h of husks) {
-        const size = h.size * 2; // husks used radius before, so scale a bit
+        const size = h.size * 2;
 
         if (asteroidImgLoaded) {
-          // Draw asteroid centered on its x/y
           ctx.drawImage(
             asteroidImg,
             h.x - size / 2,
@@ -1504,7 +1460,6 @@ function checkAlienLandingCircle() {
             size
           );
         } else {
-          // Fallback: old hex shape
           ctx.fillStyle = '#9ea2b0';
           ctx.strokeStyle = '#555a68';
           ctx.lineWidth = 1.4;
@@ -1527,7 +1482,7 @@ function checkAlienLandingCircle() {
     }
 
     function drawProjectiles() {
-      ctx.fillStyle = '#f0d4ff'; // White/Purple glow for projectiles
+      ctx.fillStyle = '#f0d4ff';
       for (let p of alienProjectiles) {
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
@@ -1540,7 +1495,6 @@ function checkAlienLandingCircle() {
       ctx.font = '24px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      
       for (let h of hearts) {
         ctx.fillText("❤️", h.x, h.y + 2);
       }
@@ -1552,18 +1506,15 @@ function checkAlienLandingCircle() {
       ctx.font = '24px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-
       for (let s of stars) {
         ctx.fillText("⭐", s.x, s.y + 2);
       }
-
       ctx.restore();
     }
 
     function drawAlien() {
       if (!alien) return;
       
-      // Apply the fade out opacity during the win sequence
       ctx.save();
       ctx.globalAlpha = alienOpacity; 
       
@@ -1594,14 +1545,11 @@ function checkAlienLandingCircle() {
       ctx.arc(0, -s * 0.15, s * 0.08, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.restore(); // Restore globalAlpha and translation
+      ctx.restore();
       ctx.lineWidth = 1;
     }
 
     function drawLandingTarget() {
-      // Show only when:
-      // - Timer is below 1.0 second during PLAYING  OR
-      // - Alien is falling during POST_TIMER
       const isPreviewTime = (gameState === State.PLAYING && timer < 1.6);
       const isFallingPhase = (gameState === State.POST_TIMER && !alienLanded);
 
@@ -1611,13 +1559,9 @@ function checkAlienLandingCircle() {
       const indicatorWidth = alien.size * 2.5;
       const indicatorHeight = 12;
 
-      // Center indicator to alien X
       const x = alien.x - indicatorWidth / 2;
-
-      // Place just above trampoline surface so it is clearly visible
       const y = trampoline.y - trampoline.height - 6;
 
-      // Pulse transparency
       const alpha = 0.5 + Math.sin(performance.now() / 300) * 0.2;
 
       ctx.save();
@@ -1626,19 +1570,15 @@ function checkAlienLandingCircle() {
       ctx.restore();
     }
 
-    // --- Draw Win Effect ---
     function updateWinEffect(dt) {
       if (!winEffect) return;
       winEffect.time += dt;
-      
       const duration = 0.5;
-      
-      // Update Alien Opacity
       if (winEffect.time <= duration) {
         alienOpacity = 1.0 - (winEffect.time / duration); 
       } else {
-        winEffect = null; // End effect
-        alienOpacity = 0.0; // Ensure alien is invisible
+        winEffect = null;
+        alienOpacity = 0.0;
       }
     }
 
@@ -1647,19 +1587,17 @@ function checkAlienLandingCircle() {
       
       const duration = 0.5;
       const maxRadius = 150;
-      const opacity = 1.0 - (winEffect.time / duration); // Fade out
+      const opacity = 1.0 - (winEffect.time / duration);
       const currentRadius = winEffect.radius + (maxRadius * winEffect.time * 2);
 
       ctx.save();
       ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
       ctx.lineWidth = 6 * opacity;
 
-      // Draw outward expanding circle
       ctx.beginPath();
       ctx.arc(winEffect.x, winEffect.y, currentRadius, 0, Math.PI * 2);
       ctx.stroke();
       
-      // Flash effect at center
       ctx.fillStyle = `rgba(255, 255, 255, ${opacity * 0.8})`;
       ctx.beginPath();
       ctx.arc(winEffect.x, winEffect.y, winEffect.radius * 2, 0, Math.PI * 2);
@@ -1673,7 +1611,7 @@ function checkAlienLandingCircle() {
       deathEffect.time += dt;
       const duration = 0.4;
       if (deathEffect.time > duration) {
-        deathEffect = null; // end the effect
+        deathEffect = null;
       }
     }
 
@@ -1690,12 +1628,10 @@ function checkAlienLandingCircle() {
       ctx.strokeStyle = `rgba(255, 120, 120, ${opacity})`;
       ctx.lineWidth = 5 * opacity;
 
-      // Expanding ring
       ctx.beginPath();
       ctx.arc(deathEffect.x, deathEffect.y, currentRadius, 0, Math.PI * 2);
       ctx.stroke();
 
-      // Small flash at center
       ctx.fillStyle = `rgba(255, 200, 200, ${opacity * 0.8})`;
       ctx.beginPath();
       ctx.arc(deathEffect.x, deathEffect.y, deathEffect.radius * 1.4, 0, Math.PI * 2);
@@ -1709,11 +1645,8 @@ function checkAlienLandingCircle() {
       ctx.font = '14px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
       ctx.textBaseline = 'top';
 
-      // Big center message only in non-playing states
       let message = '';
       let subMessage = '';
-
-      const cfg = levelConfigs[currentLevel - 1];
 
       if (gameState === State.WAITING) {
         drawInstructions();
@@ -1728,7 +1661,6 @@ function checkAlienLandingCircle() {
         message = 'GAME OVER';
         subMessage = 'Press SPACE or ↑ to restart from Level 1.';
       } else if (gameState === State.WIN) {
-        // ✅ Use the custom final win screen and bail out
         drawFinalWinScreen();
         ctx.restore();
         return;
@@ -1770,40 +1702,36 @@ function checkAlienLandingCircle() {
       
       const rules = [
         "Survive for 10 seconds without hitting objects or the UFO (purple area).",
-        "Use Left/Right arrows (← →) to navigate.",
-        "Each bounce gets higher so be careful."
+        "Use Left/Right arrows (← →) or on-screen buttons to move.",
+        "After time is up, let the UFO land on you to win the level."
       ];
       
       const boxWidth = 520;
-      const boxHeight = 200;
+      const boxHeight = 220;
       const boxX = W / 2 - boxWidth / 2;
       const boxY = H / 2 - boxHeight / 2;
 
-      // Draw background box
       ctx.fillStyle = 'rgba(0,0,0,0.65)';
       ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
       ctx.strokeStyle = 'rgba(255,255,255,0.18)';
       ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
 
-      // Title
       ctx.fillStyle = '#ffe8a9';
       ctx.font = '22px system-ui';
-      ctx.fillText("HOW TO PLAY", W / 2, boxY + 20);
+      ctx.fillText("HOW TO PLAY", W / 2, boxY + 24);
 
-      // Rules
       ctx.textAlign = 'left';
       ctx.font = '14px system-ui';
       ctx.fillStyle = '#c5ccff';
       
       rules.forEach((rule, index) => {
-        ctx.fillText(rule, boxX + 30, boxY + 55 + index * 24);
+        ctx.fillText(rule, boxX + 30, boxY + 60 + index * 24);
       });
 
-      // Start prompt
       ctx.textAlign = 'center';
       ctx.fillStyle = '#3ef19e';
       ctx.font = '16px system-ui';
-      ctx.fillText("PRESS ↑ ARROW TO START", W / 2, boxY + boxHeight - 30);
+      ctx.fillText("PRESS ↑ ARROW OR TAP ▶️ TO START", W / 2, boxY + boxHeight - 34);
 
       ctx.restore();
     }
@@ -1814,24 +1742,20 @@ function checkAlienLandingCircle() {
       ctx.save();
       ctx.textAlign = 'center';
 
-      // Dimmed full-screen backdrop
       ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
       ctx.fillRect(0, 0, W, H);
 
-      // Glowy center card
       const boxWidth  = 520;
       const boxHeight = 260;
       const boxX = W / 2 - boxWidth / 2;
       const boxY = H / 2 - boxHeight / 2;
 
-      // Outer glow-ish background
       const grd = ctx.createLinearGradient(boxX, boxY, boxX + boxWidth, boxY + boxHeight);
       grd.addColorStop(0, 'rgba(60, 255, 180, 0.18)');
       grd.addColorStop(1, 'rgba(140, 180, 255, 0.28)');
       ctx.fillStyle = grd;
       ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
 
-      // Inner dark panel
       ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
       ctx.fillRect(boxX + 6, boxY + 6, boxWidth - 12, boxHeight - 12);
 
@@ -1839,26 +1763,22 @@ function checkAlienLandingCircle() {
       ctx.lineWidth = 1.5;
       ctx.strokeRect(boxX + 6.5, boxY + 6.5, boxWidth - 13, boxHeight - 13);
 
-      // Title
       ctx.fillStyle = '#3ef19e';
       ctx.font = '26px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
       ctx.fillText('NEBULA GAUNTLET CLEARED!', W / 2, boxY + 38);
 
-      // Sub-title
       ctx.fillStyle = '#ffe8a9';
       ctx.font = '16px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
       ctx.fillText(`You survived all ${TOTAL_LEVELS} levels.`, W / 2, boxY + 70);
 
-      // Stats row
       ctx.font = '14px system-ui';
       ctx.fillStyle = '#c5ccff';
       ctx.fillText(`Lives remaining: ${lives}`, W / 2, boxY + 104);
       ctx.fillText('Alien evasions mastered. Bounce control: certified.', W / 2, boxY + 128);
 
-      // Little bullet list of “feats”
       const feats = [
         '• Dodged rocks, asteroids, beams, and projectiles',
-        '• Timed the final landings on a moving UFO',
+        '• Timed the final landings with a falling UFO',
         '• Collected powerups and survived the gauntlet'
       ];
       ctx.textAlign = 'left';
@@ -1866,7 +1786,6 @@ function checkAlienLandingCircle() {
         ctx.fillText(line, boxX + 40, boxY + 160 + i * 18);
       });
 
-      // Restart prompt
       ctx.textAlign = 'center';
       ctx.fillStyle = '#3ef19e';
       ctx.font = '15px system-ui';
@@ -1875,68 +1794,65 @@ function checkAlienLandingCircle() {
       ctx.restore();
     }
 
- function gameLoop(timestamp) {
-  if (!lastTimestamp) {
-    lastTimestamp = timestamp;
-    requestAnimationFrame(gameLoop);
-    return;
-  }
-  const dt = Math.min((timestamp - lastTimestamp) / 1000, 0.033);
-  lastTimestamp = timestamp;
+    function gameLoop(timestamp) {
+      if (!lastTimestamp) {
+        lastTimestamp = timestamp;
+        requestAnimationFrame(gameLoop);
+        return;
+      }
+      const dt = Math.min((timestamp - lastTimestamp) / 1000, 0.033);
+      lastTimestamp = timestamp;
 
-  if (gameState === State.PLAYING) {
-    handleTimerAndMusic(dt);
-    spawnAsteroid(dt);
-    updateAsteroids(dt);
-    updateTrampoline(dt);
-    updatePlayer(dt);
-    updateAlien(dt);
-    handleAlienThreatAudio();
-    updateProjectiles(dt);
-    spawnHeart(dt);
-    updateHearts(dt);
-    spawnStar(dt);
-    updateStars(dt);
+      if (gameState === State.PLAYING) {
+        handleTimerAndMusic(dt);
+        spawnAsteroid(dt);
+        updateAsteroids(dt);
+        updateTrampoline(dt);
+        updatePlayer(dt);
+        updateAlien(dt);
+        handleAlienThreatAudio();
+        updateProjectiles(dt);
+        spawnHeart(dt);
+        updateHearts(dt);
+        spawnStar(dt);
+        updateStars(dt);
 
-  } else if (gameState === State.POST_TIMER) {
-    handleTimerAndMusic(dt);
+      } else if (gameState === State.POST_TIMER) {
+        handleTimerAndMusic(dt);
+        updateAlien(dt);
+        updateTrampoline(dt);
+        updatePlayer(dt);
 
-    // ✅ Move the alien first so the player uses the latest position
-    updateAlien(dt);
-    updateTrampoline(dt);
-    updatePlayer(dt);
+      } else if (
+        gameState === State.WAITING ||
+        gameState === State.LEVEL_COMPLETE ||
+        gameState === State.GAME_OVER ||
+        gameState === State.WIN
+      ) {
+        updateTrampoline(dt);
+        updateAlien(dt);
+      }
 
-  } else if (
-    gameState === State.WAITING ||
-    gameState === State.LEVEL_COMPLETE ||
-    gameState === State.GAME_OVER ||
-    gameState === State.WIN
-  ) {
-    updateTrampoline(dt);
-    updateAlien(dt);
-  }
+      updateWinEffect(dt);
+      updateDeathEffect(dt);
 
-  updateWinEffect(dt);
-  updateDeathEffect(dt);
+      drawBackground();
+      drawSuctionBeam();
+      drawHusks();
+      drawAsteroids();
+      drawProjectiles();
+      drawHearts();
+      drawStars();
+      drawTrampoline();
+      drawLandingTarget();
+      drawAlien();
+      drawPlayer();
+      drawWinEffect();
+      drawDeathEffect();
+      drawUIOverlay();
 
-  drawBackground();
-  drawSuctionBeam();
-  drawHusks();
-  drawAsteroids();
-  drawProjectiles();
-  drawHearts();
-  drawStars();
-  drawTrampoline();
-  drawLandingTarget();
-  drawAlien();
-  drawPlayer();
-  drawWinEffect();
-  drawDeathEffect();
-  drawUIOverlay();
-
-  requestAnimationFrame(gameLoop);
-}
-
+      requestAnimationFrame(gameLoop);
+    }
 
     window.addEventListener('keydown', (e) => {
       if (e.code === 'Space' || e.code === 'ArrowUp') {
@@ -1946,7 +1862,6 @@ function checkAlienLandingCircle() {
           if (currentLevel < TOTAL_LEVELS) {
             resetLevel(currentLevel + 1);
           } else {
-            // Finished all levels, treat as WIN and restart from 1
             gameState = State.WIN;
             displayWinScreen();
           }
