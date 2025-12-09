@@ -124,9 +124,9 @@
       pointer-events: auto;
       font-size: 44px;
       padding: 10px 30px;
+      border:none;
+      background-color: transparent;
       border-radius: 20px;
-      border: 1px solid rgba(196,200,212,0.25);
-      background: rgba(0,0,0,0.65);
       color: #f5f5ff;
       min-width: 56px;
       bottom: 12px;
@@ -146,11 +146,10 @@
       }
       #touchControls button {
         font-size: 64px;
-        background-color: color(srgb 0.4454 0.5591 0.68);
       }
     }
 
-    @media (max-width: 680px), (hover: none) and (pointer: coarse) {
+    @media (max-width: 600px), (hover: none) and (pointer: coarse) {
       #touchControls button {
         font-size: 100px;
         bottom:50px;
@@ -248,7 +247,7 @@ earthTileImg.onload = () => { earthTileLoaded = true; };
     const K    = 0.25;
 
     const LEVEL_TIME = 10.0;
-    const INITIAL_LIVES = 10;
+    const INITIAL_LIVES = 15;
     const LAMBDA_BASE = 0.2;
     const TOTAL_LEVELS_PER_WORLD = 10;
 
