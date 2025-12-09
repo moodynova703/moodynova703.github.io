@@ -207,9 +207,11 @@
     const cactusImg  = new Image(); // earth static
     const spaceTileImg = new Image();
 const earthTileImg = new Image();
+const homeBgImg = new Image();
 
 let spaceTileLoaded = false;
 let earthTileLoaded = false;
+    let homeBgLoaded = false;
     let rockImgLoaded = false;
     let asteroidImgLoaded = false;
     let birdImgLoaded = false;
@@ -217,6 +219,7 @@ let earthTileLoaded = false;
 
     spaceTileImg.src = 'space.png';
 earthTileImg.src = 'earth.png';
+homeBgImg.src = 'home.png'
     rockImg.src     = 'rock.png';
     asteroidImg.src = 'asteroid.png';
     birdImg.src     = 'bird.png';
@@ -224,6 +227,7 @@ earthTileImg.src = 'earth.png';
 
     spaceTileImg.onload = () => { spaceTileLoaded = true; };
 earthTileImg.onload = () => { earthTileLoaded = true; };
+homeBgImg.onload    = () => { homeBgLoaded    = true; };
     rockImg.onload      = () => rockImgLoaded = true;
     asteroidImg.onload  = () => asteroidImgLoaded = true;
     birdImg.onload      = () => birdImgLoaded = true;
@@ -1380,140 +1384,78 @@ earthTileImg.onload = () => { earthTileLoaded = true; };
     /* ==========================================================
        DRAWING
     ========================================================== */
-    function drawBackground() {
-      ctx.save();
+ function drawBackground() {
+  ctx.save();
 
-      if (!currentWorld || currentWorld === 'space') {
-        ctx.fillStyle = '#02030c';
-        ctx.fillRect(0, 0, W, H);
-        const gradient = ctx.createRadialGradient(W/2, H*0.2, 0, W/2, H*0.2, H);
-        gradient.addColorStop(0, '#151c3a');
-        gradient.addColorStop(0.5, '#050814');
-        gradient.addColorStop(1, '#000000');
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, W, H);
-        ctx.fillStyle = 'rgba(255,255,255,0.8)';
-        for (let i = 0; i < 40; i++) {
-          const x = (i * 73) % W;
-          const y = (i * 131) % H * 0.6;
-          const r = (i % 3 === 0) ? 1.3 : 0.8;
-          ctx.beginPath();
-          ctx.arc(x, y, r, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      } else {
-        // Simple Earth backdrop: sky + dunes
-        const sky = ctx.createLinearGradient(0, 0, 0, H);
-        sky.addColorStop(0, '#59b5ff');
-        sky.addColorStop(0.6, '#f9d783');
-        sky.addColorStop(1, '#f5a623');
-        ctx.fillStyle = sky;
-        ctx.fillRect(0, 0, W, H);
+  // HOME: use home.png full-screen if available
+  if (gameState === State.HOME && homeBgLoaded) {
+    // cover the canvas, preserving aspect ratio
+    const img = homeBgImg;
+    const imgRatio = img.width / img.height;
+    const canvasRatio = W / H;
 
-        // Sand layers
-        ctx.fillStyle = 'rgba(255, 220, 150, 0.9)';
-        ctx.beginPath();
-        ctx.moveTo(0, H * 0.65);
-        ctx.quadraticCurveTo(W * 0.25, H * 0.60, W * 0.5, H * 0.67);
-        ctx.quadraticCurveTo(W * 0.75, H * 0.72, W, H * 0.68);
-        ctx.lineTo(W, H);
-        ctx.lineTo(0, H);
-        ctx.closePath();
-        ctx.fill();
-      }
-
-      ctx.restore();
+    let drawW, drawH, offsetX, offsetY;
+    if (canvasRatio > imgRatio) {
+      // canvas is wider than image
+      drawW = W;
+      drawH = W / imgRatio;
+      offsetX = 0;
+      offsetY = (H - drawH) / 2;
+    } else {
+      // canvas is taller than image
+      drawH = H;
+      drawW = H * imgRatio;
+      offsetY = 0;
+      offsetX = (W - drawW) / 2;
     }
 
-    function drawSuctionBeam() {
-      if (!alien || !currentWorld) return;
-      ctx.save();
-      const x = alien.x;
-      const top = 0;
-      const bottom = ALIEN_SUCTION_Y;
-      const beamWidth = ALIEN_BEAM_HALF_WIDTH * 2;
+  const yShift = 80;
+ctx.drawImage(img, offsetX, offsetY + yShift, drawW, drawH);
+    ctx.restore();
+    return;
+  }
 
-      const grd = ctx.createLinearGradient(x, top, x, bottom);
-      grd.addColorStop(0, 'rgba(182,120,255,0.0)');
-      grd.addColorStop(0.4, 'rgba(182,120,255,0.25)');
-      grd.addColorStop(1, 'rgba(130,60,220,0.45)');
-
-      ctx.fillStyle = grd;
-      ctx.fillRect(x - ALIEN_BEAM_HALF_WIDTH, top, beamWidth, bottom - top);
-
-      ctx.strokeStyle = 'rgba(220,180,255,0.6)';
-      ctx.lineWidth = 1;
+  // IN-GAME BACKGROUNDS (Space / Earth) – same as before
+  if (!currentWorld || currentWorld === 'space') {
+    ctx.fillStyle = '#02030c';
+    ctx.fillRect(0, 0, W, H);
+    const gradient = ctx.createRadialGradient(W/2, H*0.2, 0, W/2, H*0.2, H);
+    gradient.addColorStop(0, '#151c3a');
+    gradient.addColorStop(0.5, '#050814');
+    gradient.addColorStop(1, '#000000');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = 'rgba(255,255,255,0.8)';
+    for (let i = 0; i < 40; i++) {
+      const x = (i * 73) % W;
+      const y = (i * 131) % H * 0.6;
+      const r = (i % 3 === 0) ? 1.3 : 0.8;
       ctx.beginPath();
-      ctx.moveTo(x - ALIEN_BEAM_HALF_WIDTH, top);
-      ctx.lineTo(x - ALIEN_BEAM_HALF_WIDTH, bottom);
-      ctx.moveTo(x + ALIEN_BEAM_HALF_WIDTH, top);
-      ctx.lineTo(x + ALIEN_BEAM_HALF_WIDTH, bottom);
-      ctx.stroke();
-
-      ctx.restore();
-    }
-
-    function drawTrampoline() {
-      if (!currentWorld) return;
-      const halfWidth = trampoline.width / 2;
-      const x = trampoline.x - halfWidth;
-      const y = trampoline.y - trampoline.height / 2;
-
-      const grd = ctx.createLinearGradient(x, y, x, y + trampoline.height);
-      grd.addColorStop(0, '#3ef19e');
-      grd.addColorStop(1, '#17a45f');
-      ctx.fillStyle = grd;
-      ctx.fillRect(x, y, trampoline.width, trampoline.height);
-
-      ctx.strokeStyle = '#0a4f31';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-      ctx.lineTo(x, y + trampoline.height);
-      ctx.moveTo(x + trampoline.width, y);
-      ctx.lineTo(x + trampoline.width, y + trampoline.height);
-      ctx.stroke();
-      ctx.lineWidth = 1;
-    }
-
-    function drawPlayer() {
-      if (winEffect || deathEffect || !currentWorld) return;
-
-      ctx.save();
-
-      if (isInvincible) {
-        const time = performance.now() * 0.001;
-        const baseColor = Math.floor(time * 360 / 0.5);
-        ctx.lineWidth = 4;
-        for (let i = 0; i < 6; i++) {
-          const hue = (baseColor + i * 60) % 360;
-          ctx.strokeStyle = `hsl(${hue}, 100%, 70%)`;
-          ctx.beginPath();
-          ctx.arc(player.x, player.y, player.radius + 4, 
-            i * (Math.PI / 3), (i + 1) * (Math.PI / 3));
-          ctx.stroke();
-        }
-        ctx.lineWidth = 1;
-      }
-
-      const glow = ctx.createRadialGradient(
-        player.x, player.y, player.radius * 0.2,
-        player.x, player.y, player.radius * 1.3
-      );
-      glow.addColorStop(0, '#5bd0ff');
-      glow.addColorStop(1, '#2044ff');
-      ctx.fillStyle = glow;
-      ctx.beginPath();
-      ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
+      ctx.arc(x, y, r, 0, Math.PI * 2);
       ctx.fill();
-
-      ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-      ctx.beginPath();
-      ctx.arc(player.x - 4, player.y - 4, player.radius * 0.5, 0, Math.PI * 2);
-      ctx.stroke();
-      
-      ctx.restore();
     }
+  } else {
+    const sky = ctx.createLinearGradient(0, 0, 0, H);
+    sky.addColorStop(0, '#59b5ff');
+    sky.addColorStop(0.6, '#f9d783');
+    sky.addColorStop(1, '#f5a623');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.fillStyle = 'rgba(255, 220, 150, 0.9)';
+    ctx.beginPath();
+    ctx.moveTo(0, H * 0.65);
+    ctx.quadraticCurveTo(W * 0.25, H * 0.60, W * 0.5, H * 0.67);
+    ctx.quadraticCurveTo(W * 0.75, H * 0.72, W, H * 0.68);
+    ctx.lineTo(W, H);
+    ctx.lineTo(0, H);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
+
 
  function drawAsteroids() {
   if (!currentWorld) return;
