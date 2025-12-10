@@ -251,7 +251,7 @@
     const K    = 0.25;
 
     const LEVEL_TIME = 10.0;
-    const INITIAL_LIVES = 15;
+    const INITIAL_LIVES = 10;
     const LAMBDA_BASE = 0.2;
     const TOTAL_LEVELS_PER_WORLD = 10;
 
@@ -652,7 +652,7 @@
     let currentWorld = null; // 'space' or 'earth'
     let currentLevel = 1;
     let levelConfigs = spaceLevels; // pointer for current world
-    let earthUnlocked = true;
+    let earthUnlocked = false;
 
     let lives = INITIAL_LIVES;
     let bounceCount = 0;
