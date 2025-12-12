@@ -638,7 +638,7 @@ function getWaterSurfaceY() {
           levelBounces: 10,
           trampWidthRatio: 0.35,
           trampSpeed: 150,
-          husks: [{ x: W * 0.5, y: H - 110, size: 45 }],
+          husks: [{ x: W * 0.85, y: H - 110, size: 45 }],
           lambdaMultiplier: 4.5,
           dirMix: { H: 0.5, D: 0.4, V: 0.1 },
           alienSpeedTop: 160,
@@ -1006,7 +1006,7 @@ function getWaterSurfaceY() {
       let currentWorld = null; // 'space' or 'earth'
       let currentLevel = 1;
       let levelConfigs = spaceLevels; // pointer for current world
-      let earthUnlocked = false;
+      let earthUnlocked = true;
       let seaUnlocked = true; // Set to false to follow unlock progression
 
       let lives = INITIAL_LIVES;
