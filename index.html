@@ -1,17 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>10-Second Bounce Challenge</title>
   <style>
     /* ----------------------------------------------------------
        GLOBAL RESET & BODY
     ---------------------------------------------------------- */
-    html, body {
+    html,
+    body {
       margin: 0;
       padding: 0;
       overflow: hidden;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
       background: #030718;
     }
 
@@ -21,7 +23,7 @@
     #gameContainer {
       display: flex;
       flex-direction: column;
-      height: 100dvh;       /* more stable on iPad Safari */
+      height: 100dvh; /* more stable on iPad Safari */
       overflow: hidden;
       background: #030718; /* simple behind-topBar background */
     }
@@ -35,7 +37,7 @@
       gap: 16px;
       padding: 8px 16px;
       background: linear-gradient(to right, #050814, #0c1230);
-      border-bottom: 1px solid rgba(255,255,255,0.08);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
       font-size: 12px;
     }
 
@@ -45,8 +47,8 @@
       padding: 4px 8px;
       align-items: center;
       border-radius: 999px;
-      background: rgba(0,0,0,0.35);
-      border: 1px solid rgba(255,255,255,0.06);
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.06);
       min-width: 70px;
     }
 
@@ -66,7 +68,7 @@
       margin-top: 1px;
       font-size: 21px;
       font-weight: 600;
-      color:#9dacff;
+      color: #9dacff;
     }
 
     /* ----------------------------------------------------------
@@ -124,7 +126,7 @@
       pointer-events: auto;
       font-size: 44px;
       padding: 10px 30px;
-      border:none;
+      border: none;
       background-color: transparent;
       border-radius: 20px;
       color: #f5f5ff;
@@ -132,8 +134,12 @@
       bottom: 12px;
     }
 
-    #btnLeft  { left: 12px; }
-    #btnRight { right: 12px; }
+    #btnLeft {
+      left: 12px;
+    }
+    #btnRight {
+      right: 12px;
+    }
     #btnStart {
       left: 50%;
       transform: translateX(-50%);
@@ -152,7 +158,7 @@
     @media (max-width: 600px), (hover: none) and (pointer: coarse) {
       #touchControls button {
         font-size: 100px;
-        bottom:50px;
+        bottom: 50px;
         border: none;
       }
     }
@@ -169,7 +175,7 @@
         <span class="hudLabel">Lives</span>
         <span class="hudValue" id="hudLives">❤️ x10</span>
       </div>
-      <div class="hudGroup" id="timerHudGroup"> 
+      <div class="hudGroup" id="timerHudGroup">
         <span class="hudLabel">Timer</span>
         <span class="hudValue" id="hudTimer">10.0s</span>
       </div>
@@ -187,1183 +193,1627 @@
   </div>
 
   <script>
-  (function () {
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
+    (function () {
+      const canvas = document.getElementById("gameCanvas");
+      const ctx = canvas.getContext("2d");
 
-    const hudLevel = document.getElementById('hudLevel');
-    const hudLives = document.getElementById('hudLives');
-    const hudTimer = document.getElementById('hudTimer'); 
-    
-    const W = canvas.width;
-    const H = canvas.height;
+      const hudLevel = document.getElementById("hudLevel");
+      const hudLives = document.getElementById("hudLives");
+      const hudTimer = document.getElementById("hudTimer");
 
-    /* ==========================================================
-       SPRITES
-    ========================================================== */
-    const rockImg    = new Image(); // space moving hazard
-    const asteroidImg= new Image(); // space static
-    const birdImg    = new Image(); // earth moving
-    const cactusImg  = new Image(); // earth static
-    const spaceTileImg = new Image();
-    const earthTileImg = new Image();
-    const homeBgImg   = new Image();
+      const W = canvas.width;
+      const H = canvas.height;
 
-    let spaceTileLoaded = false;
-    let earthTileLoaded = false;
-    let homeBgLoaded    = false;
-    let rockImgLoaded   = false;
-    let asteroidImgLoaded = false;
-    let birdImgLoaded   = false;
-    let cactusImgLoaded = false;
+      /* ==========================================================
+         SPRITES
+      ========================================================== */
+      const rockImg = new Image(); // space moving hazard
+      const asteroidImg = new Image(); // space static
+      const birdImg = new Image(); // earth moving
+      const cactusImg = new Image(); // earth static
+      const spaceTileImg = new Image();
+      const earthTileImg = new Image();
+      const homeBgImg = new Image();
+      const sharkImg = new Image(); // sea moving hazard
+      const icebergImg = new Image(); // sea static
+      const seaTileImg = new Image();
 
-    spaceTileImg.src = 'space.png';
-    earthTileImg.src = 'earth.png';
-    homeBgImg.src    = 'home.png';
-    rockImg.src      = 'rock.png';
-    asteroidImg.src  = 'asteroid.png';
-    birdImg.src      = 'bird.png';
-    cactusImg.src    = 'cactus.png';
+      let spaceTileLoaded = false;
+      let earthTileLoaded = false;
+      let homeBgLoaded = false;
+      let rockImgLoaded = false;
+      let asteroidImgLoaded = false;
+      let birdImgLoaded = false;
+      let cactusImgLoaded = false;
+      let sharkImgLoaded = false;
+      let icebergImgLoaded = false;
+      let seaTileLoaded = false;
 
-    spaceTileImg.onload   = () => { spaceTileLoaded   = true; };
-    earthTileImg.onload   = () => { earthTileLoaded   = true; };
-    homeBgImg.onload      = () => { homeBgLoaded      = true; };
-    rockImg.onload        = () => { rockImgLoaded     = true; };
-    asteroidImg.onload    = () => { asteroidImgLoaded = true; };
-    birdImg.onload        = () => { birdImgLoaded     = true; };
-    cactusImg.onload      = () => { cactusImgLoaded   = true; };
+      spaceTileImg.src = "space.png";
+      earthTileImg.src = "earth.png";
+      homeBgImg.src = "home.png";
+      rockImg.src = "rock.png";
+      asteroidImg.src = "asteroid.png";
+      birdImg.src = "bird.png";
+      cactusImg.src = "cactus.png";
+      sharkImg.src = "shark.png";
+      icebergImg.src = "iceberg.png";
+      seaTileImg.src = "sea.png";
 
-    /* ==========================================================
-       PHYSICS & CONSTANTS
-    ========================================================== */
-    const GRAVITY = 1000;
-    const AX = 400;
-    const DAMPING = 0.10;
-    const MIDLINE_Y = 300;
+      spaceTileImg.onload = () => {
+        spaceTileLoaded = true;
+      };
+      earthTileImg.onload = () => {
+        earthTileLoaded = true;
+      };
+      homeBgImg.onload = () => {
+        homeBgLoaded = true;
+      };
+      rockImg.onload = () => {
+        rockImgLoaded = true;
+      };
+      asteroidImg.onload = () => {
+        asteroidImgLoaded = true;
+      };
+      birdImg.onload = () => {
+        birdImgLoaded = true;
+      };
+      cactusImg.onload = () => {
+        cactusImgLoaded = true;
+      };
+      sharkImg.onload = () => {
+        sharkImgLoaded = true;
+      };
+      icebergImg.onload = () => {
+        icebergImgLoaded = true;
+      };
+      seaTileImg.onload = () => {
+        seaTileLoaded = true;
+      };
 
-    const ALIEN_SUCTION_Y = 50;
-    const ALIEN_BEAM_HALF_WIDTH = 70;
+      /* ==========================================================
+         PHYSICS & CONSTANTS
+      ========================================================== */
+      const GRAVITY = 1000;
+      const AX = 400;
+      const DAMPING = 0.1;
+      const MIDLINE_Y = 300;
 
-    const CEILING_Y = 10;
+      const ALIEN_SUCTION_Y = 50;
+      const ALIEN_BEAM_HALF_WIDTH = 70;
 
-    const VMIN = 500;
-    const VMAX = 1500;
-    const K    = 0.25;
+      const CEILING_Y = 10;
+      // Sea water surface is slightly above the trampoline
+const WATER_SURFACE_OFFSET = 20; // tweak to taste
+const ICEBERG_Y_OFFSET = 70;
+const ICEBERG_BOB_AMPLITUDE = 4;   // how far the iceberg moves (pixels)
+const ICEBERG_BOB_SPEED = 1.3;     // how fast it bobs
 
-    const LEVEL_TIME = 10.0;
-    const INITIAL_LIVES = 10;
-    const LAMBDA_BASE = 0.2;
-    const TOTAL_LEVELS_PER_WORLD = 10;
 
-    /* ==========================================================
-       WORLDS & LEVEL CONFIGS
-    ========================================================== */
+function getWaterSurfaceY() {
+  return trampoline.y - WATER_SURFACE_OFFSET;
+}
 
-    const spaceLevels = [
-      {
-        theme: 'The First Ascent', levelBounces: 4, trampWidthRatio: 1.0, trampSpeed: 0,
-        husks: [], lambdaMultiplier: 1.0,
-        dirMix: { H: 0.80, D: 0.20, V: 0.0 }, alienSpeedTop: 0, projectileRate: 0
-      },
-      {
-        theme: 'Geo-Drift', levelBounces: 5, trampWidthRatio: 1.0, trampSpeed: 0,
-        husks: [{ x: W * 0.5, y: H * 0.45, size: 26 }],
-        lambdaMultiplier: 1.1, dirMix: { H: 0.75, D: 0.25, V: 0.0 },
-        alienSpeedTop: 40, projectileRate: 0
-      },
-      {
-        theme: 'High Orbit Passage', levelBounces: 6, trampWidthRatio: 1.0, trampSpeed: 0,
-        husks: [{ x: W * 0.4, y: H * 0.32, size: 32 }],
-        lambdaMultiplier: 1.25, dirMix: { H: 0.70, D: 0.30, V: 0.0 },
-        alienSpeedTop: 60, projectileRate: 0
-      },
-      {
-        theme: 'The Gravity Well', levelBounces: 7, trampWidthRatio: 1.0, trampSpeed: 0,
-        husks: [{ x: W * 0.5, y: H * 0.25, size: 32 }],
-        lambdaMultiplier: 1.4, dirMix: { H: 0.60, D: 0.35, V: 0.05 },
-        alienSpeedTop: 80, projectileRate: 0
-      },
-      {
-        theme: 'Precision Landing', levelBounces: 7, trampWidthRatio: 0.7, trampSpeed: 0,
-        husks: [
-          { x: W * 0.35, y: H * 0.40, size: 26 },
-          { x: W * 0.65, y: H * 0.30, size: 26 }
-        ],
-        lambdaMultiplier: 1.6, dirMix: { H: 0.60, D: 0.35, V: 0.05 },
-        alienSpeedTop: 100, projectileRate: 0
-      },
-      {
-        theme: 'Shifting Ground', levelBounces: 8, trampWidthRatio: 0.5, trampSpeed: 60,
-        husks: [{ x: W * 0.5, y: H * 0.38, size: 30 }],
-        lambdaMultiplier: 1.8, dirMix: { H: 0.60, D: 0.35, V: 0.05 },
-        alienSpeedTop: 100, projectileRate: 0
-      },
-      {
-        theme: 'Barrage Initiation', levelBounces: 8, trampWidthRatio: 0.5, trampSpeed: 80,
-        husks: [
-          { x: W * 0.3, y: H * 0.35, size: 30 },
-          { x: W * 0.7, y: H * 0.45, size: 30 }
-        ],
-        lambdaMultiplier: 2.0, dirMix: { H: 0.55, D: 0.40, V: 0.05 },
-        alienSpeedTop: 110, projectileRate: 0.1
-      },
-      {
-        theme: 'Hyper-Drift', levelBounces: 9, trampWidthRatio: 0.4, trampSpeed: 100,
-        husks: [
-          { x: W * 0.3, y: H * 0.25, size: 30 },
-          { x: W * 0.7, y: H * 0.45, size: 30 }
-        ],
-        lambdaMultiplier: 2.2, dirMix: { H: 0.50, D: 0.45, V: 0.05 },
-        alienSpeedTop: 120, projectileRate: 0.2
-      },
-      {
-        theme: 'The Final Traverse', levelBounces: 9, trampWidthRatio: 0.35, trampSpeed: 120,
-        husks: [{ x: W * 0.5, y: H * 0.20, size: 35 }],
-        lambdaMultiplier: 2.5, dirMix: { H: 0.50, D: 0.45, V: 0.05 },
-        alienSpeedTop: 140, projectileRate: 0.3
-      },
-      {
-        theme: 'Nebula Gauntlet', levelBounces: 10, trampWidthRatio: 0.30, trampSpeed: 140,
-        husks: [{ x: W * 0.5, y: H * 0.15, size: 35 }],
-        lambdaMultiplier: 2.75, dirMix: { H: 0.40, D: 0.50, V: 0.10 },
-        alienSpeedTop: 160, projectileRate: 0.4
-      }
-    ];
 
-    /* Earth Land – slightly harder overall than Space Land */
-    const earthLevels = [
-      {
-        theme: 'Desert Warm-Up', levelBounces: 5, trampWidthRatio: 1.0, trampSpeed: 0,
-        husks: [], lambdaMultiplier: 1.4,
-        dirMix: { H: 0.75, D: 0.25, V: 0.0 }, alienSpeedTop: 20, projectileRate: 0
-      },
-      {
-        theme: 'Low-Flying Flocks', levelBounces: 6, trampWidthRatio: 1.0, trampSpeed: 0,
-        husks: [{ x: W * 0.25, y: H - 70, size: 26 }],
-        lambdaMultiplier: 1.6,
-        dirMix: { H: 0.75, D: 0.25, V: 0.0 }, alienSpeedTop: 40, projectileRate: 0
-      },
-      {
-        theme: 'Cactus Alley', levelBounces: 6, trampWidthRatio: 0.9, trampSpeed: 0,
-        husks: [
-          { x: W * 0.2, y: H - 65, size: 28 },
-          { x: W * 0.8, y: H - 65, size: 28 }
-        ],
-        lambdaMultiplier: 1.8,
-        dirMix: { H: 0.70, D: 0.30, V: 0.0 }, alienSpeedTop: 60, projectileRate: 0
-      },
-      {
-        theme: 'Crosswinds', levelBounces: 7, trampWidthRatio: 0.8, trampSpeed: 40,
-        husks: [{ x: W * 0.25, y: H - 80, size: 30 }],
-        lambdaMultiplier: 2.0,
-        dirMix: { H: 0.65, D: 0.35, V: 0.0 }, alienSpeedTop: 80, projectileRate: 0
-      },
-      {
-        theme: 'Bird Swarm', levelBounces: 7, trampWidthRatio: 0.7, trampSpeed: 60,
-        husks: [
-          { x: W * 0.3, y: H - 70, size: 28 },
-          { x: W * 0.7, y: H - 70, size: 28 }
-        ],
-        lambdaMultiplier: 2.3,
-        dirMix: { H: 0.6, D: 0.35, V: 0.05 }, alienSpeedTop: 90, projectileRate: 0.1
-      },
-      {
-        theme: 'Dune Shift', levelBounces: 8, trampWidthRatio: 0.6, trampSpeed: 80,
-        husks: [{ x: W * 0.70, y: H - 90, size: 32 }],
-        lambdaMultiplier: 2.5,
-        dirMix: { H: 0.6, D: 0.35, V: 0.05 }, alienSpeedTop: 110, projectileRate: 0.15
-      },
-      {
-        theme: 'Predator Skies', levelBounces: 8, trampWidthRatio: 0.5, trampSpeed: 100,
-        husks: [
-          { x: W * 0.25, y: H - 80, size: 30 },
-          { x: W * 0.75, y: H - 80, size: 30 }
-        ],
-        lambdaMultiplier: 2.7,
-        dirMix: { H: 0.55, D: 0.4, V: 0.05 }, alienSpeedTop: 120, projectileRate: 0.2
-      },
-      {
-        theme: 'Ridge Run', levelBounces: 9, trampWidthRatio: 0.45, trampSpeed: 110,
-        husks: [{ x: W * 0.35, y: H - 95, size: 34 }],
-        lambdaMultiplier: 3.0,
-        dirMix: { H: 0.5, D: 0.45, V: 0.05 }, alienSpeedTop: 130, projectileRate: 0.25
-      },
-      {
-        theme: 'Canyon Crossfire', levelBounces: 9, trampWidthRatio: 0.4, trampSpeed: 120,
-        husks: [
-          { x: W * 0.3, y: H - 90, size: 34 },
-          { x: W * 0.7, y: H - 90, size: 34 }
-        ],
-        lambdaMultiplier: 3.2,
-        dirMix: { H: 0.45, D: 0.45, V: 0.10 }, alienSpeedTop: 140, projectileRate: 0.3
-      },
-      {
-        theme: 'Desert Gauntlet', levelBounces: 10, trampWidthRatio: 0.35, trampSpeed: 140,
-        husks: [{ x: W * 0.65, y: H - 100, size: 36 }],
-        lambdaMultiplier: 3.4,
-        dirMix: { H: 0.4, D: 0.5, V: 0.10 }, alienSpeedTop: 160, projectileRate: 0.35
-      }
-    ];
+      const VMIN = 500;
+      const VMAX = 1500;
+      const K = 0.25;
 
-    const WORLDS = {
-      space: {
-        id: 'space',
-        name: 'Space Land',
-        levels: spaceLevels,
-        movingSprite: 'space',
-        staticSprite: 'space'
-      },
-      earth: {
-        id: 'earth',
-        name: 'Earth Land',
-        levels: earthLevels,
-        movingSprite: 'earth',
-        staticSprite: 'earth'
-      }
-    };
+      const LEVEL_TIME = 10.0;
+      const INITIAL_LIVES = 20;
+      const LAMBDA_BASE = 0.2;
+      const TOTAL_LEVELS_PER_WORLD = 10;
 
-    /* ==========================================================
-       INPUT
-    ========================================================== */
-    const keys = { left: false, right: false, up: false };
+      /* ==========================================================
+         WORLDS & LEVEL CONFIGS
+      ========================================================== */
 
-    const btnLeft  = document.getElementById('btnLeft');
-    const btnRight = document.getElementById('btnRight');
-    const btnStart = document.getElementById('btnStart');
+      const spaceLevels = [
+        {
+          theme: "The First Ascent",
+          levelBounces: 4,
+          trampWidthRatio: 1.0,
+          trampSpeed: 0,
+          husks: [],
+          lambdaMultiplier: 1.0,
+          dirMix: { H: 0.8, D: 0.2, V: 0.0 },
+          alienSpeedTop: 0,
+          projectileRate: 0,
+        },
+        {
+          theme: "Geo-Drift",
+          levelBounces: 5,
+          trampWidthRatio: 1.0,
+          trampSpeed: 0,
+          husks: [{ x: W * 0.5, y: H * 0.45, size: 26 }],
+          lambdaMultiplier: 1.1,
+          dirMix: { H: 0.75, D: 0.25, V: 0.0 },
+          alienSpeedTop: 40,
+          projectileRate: 0,
+        },
+        {
+          theme: "High Orbit Passage",
+          levelBounces: 6,
+          trampWidthRatio: 1.0,
+          trampSpeed: 0,
+          husks: [{ x: W * 0.4, y: H * 0.32, size: 32 }],
+          lambdaMultiplier: 1.25,
+          dirMix: { H: 0.7, D: 0.3, V: 0.0 },
+          alienSpeedTop: 60,
+          projectileRate: 0,
+        },
+        {
+          theme: "The Gravity Well",
+          levelBounces: 7,
+          trampWidthRatio: 1.0,
+          trampSpeed: 0,
+          husks: [{ x: W * 0.5, y: H * 0.25, size: 32 }],
+          lambdaMultiplier: 1.4,
+          dirMix: { H: 0.6, D: 0.35, V: 0.05 },
+          alienSpeedTop: 80,
+          projectileRate: 0,
+        },
+        {
+          theme: "Precision Landing",
+          levelBounces: 7,
+          trampWidthRatio: 0.7,
+          trampSpeed: 0,
+          husks: [
+            { x: W * 0.35, y: H * 0.4, size: 26 },
+            { x: W * 0.65, y: H * 0.3, size: 26 },
+          ],
+          lambdaMultiplier: 1.6,
+          dirMix: { H: 0.6, D: 0.35, V: 0.05 },
+          alienSpeedTop: 100,
+          projectileRate: 0,
+        },
+        {
+          theme: "Shifting Ground",
+          levelBounces: 8,
+          trampWidthRatio: 0.5,
+          trampSpeed: 60,
+          husks: [{ x: W * 0.5, y: H * 0.38, size: 30 }],
+          lambdaMultiplier: 1.8,
+          dirMix: { H: 0.6, D: 0.35, V: 0.05 },
+          alienSpeedTop: 100,
+          projectileRate: 0,
+        },
+        {
+          theme: "Barrage Initiation",
+          levelBounces: 8,
+          trampWidthRatio: 0.5,
+          trampSpeed: 80,
+          husks: [
+            { x: W * 0.3, y: H * 0.35, size: 30 },
+            { x: W * 0.7, y: H * 0.45, size: 30 },
+          ],
+          lambdaMultiplier: 2.0,
+          dirMix: { H: 0.55, D: 0.4, V: 0.05 },
+          alienSpeedTop: 110,
+          projectileRate: 0.1,
+        },
+        {
+          theme: "Hyper-Drift",
+          levelBounces: 9,
+          trampWidthRatio: 0.4,
+          trampSpeed: 100,
+          husks: [
+            { x: W * 0.3, y: H * 0.25, size: 30 },
+            { x: W * 0.7, y: H * 0.45, size: 30 },
+          ],
+          lambdaMultiplier: 2.2,
+          dirMix: { H: 0.5, D: 0.45, V: 0.05 },
+          alienSpeedTop: 120,
+          projectileRate: 0.2,
+        },
+        {
+          theme: "The Final Traverse",
+          levelBounces: 9,
+          trampWidthRatio: 0.35,
+          trampSpeed: 120,
+          husks: [{ x: W * 0.5, y: H * 0.2, size: 35 }],
+          lambdaMultiplier: 2.5,
+          dirMix: { H: 0.5, D: 0.45, V: 0.05 },
+          alienSpeedTop: 140,
+          projectileRate: 0.3,
+        },
+        {
+          theme: "Nebula Gauntlet",
+          levelBounces: 10,
+          trampWidthRatio: 0.3,
+          trampSpeed: 140,
+          husks: [{ x: W * 0.5, y: H * 0.15, size: 35 }],
+          lambdaMultiplier: 2.75,
+          dirMix: { H: 0.4, D: 0.5, V: 0.1 },
+          alienSpeedTop: 160,
+          projectileRate: 0.4,
+        },
+      ];
 
-    function prevent(e) { e.preventDefault(); e.stopPropagation(); }
+      /* Earth Land – slightly harder overall than Space Land */
+      const earthLevels = [
+        {
+          theme: "Desert Warm-Up",
+          levelBounces: 5,
+          trampWidthRatio: 1.0,
+          trampSpeed: 0,
+          husks: [],
+          lambdaMultiplier: 1.4,
+          dirMix: { H: 0.75, D: 0.25, V: 0.0 },
+          alienSpeedTop: 20,
+          projectileRate: 0,
+        },
+        {
+          theme: "Low-Flying Flocks",
+          levelBounces: 6,
+          trampWidthRatio: 1.0,
+          trampSpeed: 0,
+          husks: [{ x: W * 0.25, y: H - 70, size: 26 }],
+          lambdaMultiplier: 1.6,
+          dirMix: { H: 0.75, D: 0.25, V: 0.0 },
+          alienSpeedTop: 40,
+          projectileRate: 0,
+        },
+        {
+          theme: "Cactus Alley",
+          levelBounces: 6,
+          trampWidthRatio: 0.9,
+          trampSpeed: 0,
+          husks: [
+            { x: W * 0.2, y: H - 65, size: 28 },
+            { x: W * 0.8, y: H - 65, size: 28 },
+          ],
+          lambdaMultiplier: 1.8,
+          dirMix: { H: 0.7, D: 0.3, V: 0.0 },
+          alienSpeedTop: 60,
+          projectileRate: 0,
+        },
+        {
+          theme: "Crosswinds",
+          levelBounces: 7,
+          trampWidthRatio: 0.8,
+          trampSpeed: 40,
+          husks: [{ x: W * 0.25, y: H - 80, size: 30 }],
+          lambdaMultiplier: 2.0,
+          dirMix: { H: 0.65, D: 0.35, V: 0.0 },
+          alienSpeedTop: 80,
+          projectileRate: 0,
+        },
+        {
+          theme: "Bird Swarm",
+          levelBounces: 7,
+          trampWidthRatio: 0.7,
+          trampSpeed: 60,
+          husks: [
+            { x: W * 0.3, y: H - 70, size: 28 },
+            { x: W * 0.7, y: H - 70, size: 28 },
+          ],
+          lambdaMultiplier: 2.3,
+          dirMix: { H: 0.6, D: 0.35, V: 0.05 },
+          alienSpeedTop: 90,
+          projectileRate: 0.1,
+        },
+        {
+          theme: "Dune Shift",
+          levelBounces: 8,
+          trampWidthRatio: 0.6,
+          trampSpeed: 80,
+          husks: [{ x: W * 0.7, y: H - 90, size: 32 }],
+          lambdaMultiplier: 2.5,
+          dirMix: { H: 0.6, D: 0.35, V: 0.05 },
+          alienSpeedTop: 110,
+          projectileRate: 0.15,
+        },
+        {
+          theme: "Predator Skies",
+          levelBounces: 8,
+          trampWidthRatio: 0.5,
+          trampSpeed: 100,
+          husks: [
+            { x: W * 0.25, y: H - 80, size: 30 },
+            { x: W * 0.75, y: H - 80, size: 30 },
+          ],
+          lambdaMultiplier: 2.7,
+          dirMix: { H: 0.55, D: 0.4, V: 0.05 },
+          alienSpeedTop: 120,
+          projectileRate: 0.2,
+        },
+        {
+          theme: "Ridge Run",
+          levelBounces: 9,
+          trampWidthRatio: 0.45,
+          trampSpeed: 110,
+          husks: [{ x: W * 0.35, y: H - 95, size: 34 }],
+          lambdaMultiplier: 3.0,
+          dirMix: { H: 0.5, D: 0.45, V: 0.05 },
+          alienSpeedTop: 130,
+          projectileRate: 0.25,
+        },
+        {
+          theme: "Canyon Crossfire",
+          levelBounces: 9,
+          trampWidthRatio: 0.4,
+          trampSpeed: 120,
+          husks: [
+            { x: W * 0.3, y: H - 90, size: 34 },
+            { x: W * 0.7, y: H - 90, size: 34 },
+          ],
+          lambdaMultiplier: 3.2,
+          dirMix: { H: 0.45, D: 0.45, V: 0.1 },
+          alienSpeedTop: 140,
+          projectileRate: 0.3,
+        },
+        {
+          theme: "Desert Gauntlet",
+          levelBounces: 10,
+          trampWidthRatio: 0.35,
+          trampSpeed: 140,
+          husks: [{ x: W * 0.65, y: H - 100, size: 36 }],
+          lambdaMultiplier: 3.4,
+          dirMix: { H: 0.4, D: 0.5, V: 0.1 },
+          alienSpeedTop: 160,
+          projectileRate: 0.35,
+        },
+      ];
 
-    window.addEventListener('keydown', (e) => {
-      if (e.code === 'ArrowLeft')  keys.left  = true;
-      if (e.code === 'ArrowRight') keys.right = true;
-      if (e.code === 'ArrowUp' || e.code === 'Space') keys.up = true;
-    });
+      /* Sea Land – hardest overall */
+      const seaLevels = [
+        {
+          theme: "Deep Dive",
+          levelBounces: 6,
+          trampWidthRatio: 1.0,
+          trampSpeed: 0,
+          husks: [{ x: W * 0.6, y: H - 95, size: 40 }],
+          lambdaMultiplier: 2.0,
+          dirMix: { H: 0.8, D: 0.15, V: 0.05 },
+          alienSpeedTop: 40,
+          projectileRate: 0.05,
+        },
+        {
+          theme: "Hidden Current",
+          levelBounces: 7,
+          trampWidthRatio: 0.9,
+          trampSpeed: 60,
+          husks: [{ x: W * 0.25, y: H - 95, size: 30 }],
+          lambdaMultiplier: 2.4,
+          dirMix: { H: 0.75, D: 0.2, V: 0.05 },
+          alienSpeedTop: 80,
+          projectileRate: 0.1,
+        },
+        {
+          theme: "Iceberg Field",
+          levelBounces: 8,
+          trampWidthRatio: 0.8,
+          trampSpeed: 80,
+          husks: [
+            { x: W * 0.3, y: H - 85, size: 32 },
+            { x: W * 0.7, y: H - 85, size: 32 },
+          ],
+          lambdaMultiplier: 2.8,
+          dirMix: { H: 0.7, D: 0.25, V: 0.05 },
+          alienSpeedTop: 100,
+          projectileRate: 0.15,
+        },
+        {
+          theme: "Shark Feeding",
+          levelBounces: 8,
+          trampWidthRatio: 0.7,
+          trampSpeed: 100,
+          husks: [
+            { x: W * 0.2, y: H - 95, size: 30 },
+            { x: W * 0.8, y: H - 95, size: 30 },
+          ],
+          lambdaMultiplier: 3.2,
+          dirMix: { H: 0.65, D: 0.3, V: 0.05 },
+          alienSpeedTop: 120,
+          projectileRate: 0.2,
+        },
+        {
+          theme: "The Abyss",
+          levelBounces: 9,
+          trampWidthRatio: 0.5,
+          trampSpeed: 120,
+          husks: [{ x: W * 0.35, y: H - 100, size: 40 }],
+          lambdaMultiplier: 3.6,
+          dirMix: { H: 0.6, D: 0.3, V: 0.1 },
+          alienSpeedTop: 140,
+          projectileRate: 0.3,
+        },
+        {
+          theme: "Pressure Zone",
+          levelBounces: 9,
+          trampWidthRatio: 0.4,
+          trampSpeed: 130,
+          husks: [
+            { x: W * 0.35, y: H - 80, size: 30 },
+            { x: W * 0.65, y: H - 100, size: 30 },
+          ],
+          lambdaMultiplier: 4.0,
+          dirMix: { H: 0.55, D: 0.35, V: 0.1 },
+          alienSpeedTop: 150,
+          projectileRate: 0.35,
+        },
+        {
+          theme: "Vortex Run",
+          levelBounces: 10,
+          trampWidthRatio: 0.35,
+          trampSpeed: 150,
+          husks: [{ x: W * 0.5, y: H - 110, size: 45 }],
+          lambdaMultiplier: 4.5,
+          dirMix: { H: 0.5, D: 0.4, V: 0.1 },
+          alienSpeedTop: 160,
+          projectileRate: 0.4,
+        },
+        {
+          theme: "Kraken's Lair",
+          levelBounces: 10,
+          trampWidthRatio: 0.3,
+          trampSpeed: 160,
+          husks: [
+            { x: W * 0.25, y: H - 90, size: 35 },
+            { x: W * 0.75, y: H - 90, size: 35 },
+          ],
+          lambdaMultiplier: 5.0,
+          dirMix: { H: 0.45, D: 0.45, V: 0.1 },
+          alienSpeedTop: 180,
+          projectileRate: 0.45,
+        },
+        {
+          theme: "Titanic Descent",
+          levelBounces: 11,
+          trampWidthRatio: 0.25,
+          trampSpeed: 170,
+          husks: [{ x: W * 0.5, y: H - 100, size: 30 }],
+          lambdaMultiplier: 5.5,
+          dirMix: { H: 0.4, D: 0.5, V: 0.1 },
+          alienSpeedTop: 200,
+          projectileRate: 0.5,
+        },
+        {
+          theme: "Final Gauntlet",
+          levelBounces: 12,
+          trampWidthRatio: 0.2,
+          trampSpeed: 180,
+          husks: [{ x: W * 0.5, y: H - 120, size: 50 }],
+          lambdaMultiplier: 6.0,
+          dirMix: { H: 0.35, D: 0.55, V: 0.1 },
+          alienSpeedTop: 220,
+          projectileRate: 0.6,
+        },
+      ];
 
-    window.addEventListener('keyup', (e) => {
-      if (e.code === 'ArrowLeft')  keys.left  = false;
-      if (e.code === 'ArrowRight') keys.right = false;
-      if (e.code === 'ArrowUp' || e.code === 'Space') keys.up = false;
-    });
+      const WORLDS = {
+        space: {
+          id: "space",
+          name: "Space Land",
+          levels: spaceLevels,
+          movingSprite: "space",
+          staticSprite: "space",
+        },
+        earth: {
+          id: "earth",
+          name: "Earth Land",
+          levels: earthLevels,
+          movingSprite: "earth",
+          staticSprite: "earth",
+        },
+        sea: {
+          id: "sea",
+          name: "Sea Land",
+          levels: seaLevels,
+          movingSprite: "sea",
+          staticSprite: "sea",
+        },
+      };
 
-    if (btnLeft) {
-      btnLeft.addEventListener('touchstart', (e) => { prevent(e); keys.left = true; }, { passive: false });
-      btnLeft.addEventListener('touchend',   (e) => { prevent(e); keys.left = false; }, { passive: false });
-      btnLeft.addEventListener('mousedown',  (e) => { e.preventDefault(); keys.left = true; });
-      btnLeft.addEventListener('mouseup',    (e) => { e.preventDefault(); keys.left = false; });
-      btnLeft.addEventListener('mouseleave', ()  => { keys.left = false; });
-    }
+      /* ==========================================================
+         INPUT
+      ========================================================== */
+      const keys = { left: false, right: false, up: false };
 
-    if (btnRight) {
-      btnRight.addEventListener('touchstart', (e) => { prevent(e); keys.right = true; }, { passive: false });
-      btnRight.addEventListener('touchend',   (e) => { prevent(e); keys.right = false; }, { passive: false });
-      btnRight.addEventListener('mousedown',  (e) => { e.preventDefault(); keys.right = true; });
-      btnRight.addEventListener('mouseup',    (e) => { e.preventDefault(); keys.right = false; });
-      btnRight.addEventListener('mouseleave', ()  => { keys.right = false; });
-    }
+      const btnLeft = document.getElementById("btnLeft");
+      const btnRight = document.getElementById("btnRight");
+      const btnStart = document.getElementById("btnStart");
 
-    if (btnStart) {
-      btnStart.addEventListener('touchstart', (e) => {
-        prevent(e);
-        keys.up = true;
-        triggerStart();
-      }, { passive: false });
-
-      btnStart.addEventListener('touchend', (e) => {
-        prevent(e);
-        keys.up = false;
-      }, { passive: false });
-
-      btnStart.addEventListener('click', (e) => {
+      function prevent(e) {
         e.preventDefault();
-        keys.up = true;
-        triggerStart();
-        setTimeout(() => { keys.up = false; }, 50);
+        e.stopPropagation();
+      }
+
+      window.addEventListener("keydown", (e) => {
+        if (e.code === "ArrowLeft") keys.left = true;
+        if (e.code === "ArrowRight") keys.right = true;
+        if (e.code === "ArrowUp" || e.code === "Space") keys.up = true;
       });
-    }
 
-    /* ==========================================================
-       AUDIO
-    ========================================================== */
-    let audioCtx = null;
-    function ensureAudio() {
-      if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      }
-    }
+      window.addEventListener("keyup", (e) => {
+        if (e.code === "ArrowLeft") keys.left = false;
+        if (e.code === "ArrowRight") keys.right = false;
+        if (e.code === "ArrowUp" || e.code === "Space") keys.up = false;
+      });
 
-    function playBeep(freq, duration, type = 'sine', gainValue = 0.08) {
-      try {
-        ensureAudio();
-        const osc  = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = type;
-        osc.frequency.value = freq;
-        gain.gain.value = gainValue;
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        const now = audioCtx.currentTime;
-        osc.start(now);
-        osc.stop(now + duration);
-        gain.gain.setTargetAtTime(0.0001, now + duration * 0.4, duration * 0.3);
-      } catch (e) {}
-    }
-
-    function playLaunchSound(bounceCount) {
-      const baseFreq = 300;
-      const freq = baseFreq + bounceCount * 30;
-      playBeep(freq, 0.12, 'sawtooth', 0.12);
-    }
-
-    function playDeathSound() {
-      ensureAudio();
-      try {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(180, audioCtx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(60, audioCtx.currentTime + 0.35);
-        gain.gain.setValueAtTime(0.16, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.4);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.4);
-      } catch (e) {}
-    }
-
-    function playAlienSuckSound() {
-      ensureAudio();
-      try {
-        const now = audioCtx.currentTime;
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(600, now);
-        osc.frequency.exponentialRampToValueAtTime(80, now + 0.45);
-        gain.gain.setValueAtTime(0.18, now);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.45);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start(now);
-        osc.stop(now + 0.5);
-      } catch (e) {}
-    }
-
-    function playSuccessSound() {
-      ensureAudio();
-      try {
-        const now = audioCtx.currentTime;
-        const freqs = [523.25, 659.25, 783.99, 1046.5];
-        freqs.forEach((f, i) => {
-          const osc = audioCtx.createOscillator();
-          const gain = audioCtx.createGain();
-          osc.type = 'triangle';
-          osc.frequency.value = f;
-          gain.gain.setValueAtTime(0.2, now + i * 0.12);
-          gain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.12 + 0.3);
-          osc.connect(gain);
-          gain.connect(audioCtx.destination);
-          osc.start(now + i * 0.12);
-          osc.stop(now + i * 0.12 + 0.32);
-        });
-
-        const bassOsc = audioCtx.createOscillator();
-        const bassGain = audioCtx.createGain();
-        bassOsc.type = 'sine';
-        bassOsc.frequency.setValueAtTime(130.81, now);
-        bassGain.gain.setValueAtTime(0.14, now);
-        bassGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.5);
-        bassOsc.connect(bassGain);
-        bassGain.connect(audioCtx.destination);
-        bassOsc.start(now);
-        bassOsc.stop(now + 0.55);
-      } catch (e) {}
-    }
-
-    function playDangerHum(intensity) {
-      if (intensity <= 0 || !audioCtx) return;
-      playBeep(120 + 40 * intensity, 0.08, 'sine', 0.02 * intensity);
-    }
-
-    function playProjectileFire() {
-      ensureAudio();
-      playBeep(400, 0.05, 'square', 0.1);
-    }
-
-    function playHeartCollectSound() {
-      ensureAudio();
-      playBeep(880, 0.1, 'triangle', 0.15);
-      setTimeout(() => playBeep(1320, 0.1, 'triangle', 0.15), 50);
-    }
-
-    let lastMusicTick = 0;
-
-    /* ==========================================================
-       ENTITIES & GAME STATE
-    ========================================================== */
-    const player = {
-      x: W * 0.5,
-      y: H - 80,
-      vx: 0,
-      vy: 0,
-      radius: 14,
-      bouncing: false
-    };
-
-    const trampoline = {
-      x: W * 0.5,
-      y: H - 40,
-      width: W,
-      height: 14,
-      dir: 1,
-      speed: 0
-    };
-
-    let asteroids = [];
-    let husks = [];
-    let alienProjectiles = []; 
-    let hearts = [];
-    let stars = [];
-    let alien = null;
-    let alienDir = 1;
-    let alienLanded = false;  
-    let lastProjectileTime = 0; 
-    let winEffect = null; 
-    let alienOpacity = 1.0; 
-    let isInvincible = false;
-    let deathEffect = null;
-    let alienLandingGraceTimer = 0;
-    const ALIEN_LANDING_GRACE = 0.40;
-
-    const alienConfig = { size: 28 };
-
-    const State = {
-      HOME: 'home',
-      WAITING: 'waiting',
-      PLAYING: 'playing',
-      POST_TIMER: 'postTimer',
-      LEVEL_COMPLETE: 'levelComplete',
-      GAME_OVER: 'gameOver',
-      WIN: 'win'
-    };
-
-    let gameState = State.HOME;
-
-    let currentWorld = null; // 'space' or 'earth'
-    let currentLevel = 1;
-    let levelConfigs = spaceLevels; // pointer for current world
-    let earthUnlocked = false;
-
-    let lives = INITIAL_LIVES;
-    let bounceCount = 0;
-    let timer = LEVEL_TIME;
-    let lastTimestamp = null;
-
-    function setStatus(msg) {
-      console.log('[STATUS]', msg);
-    }
-
-    function updateStartButtonVisibility() {
-      if (!btnStart) return;
-      if (gameState === State.PLAYING || gameState === State.POST_TIMER) {
-        btnStart.style.display = 'none';
-      } else {
-        btnStart.style.display = 'block';
-      }
-    }
-
-    /* ==========================================================
-       WORLD / LEVEL MANAGEMENT
-    ========================================================== */
-    function enterWorld(worldId) {
-      currentWorld = worldId;
-      levelConfigs = WORLDS[worldId].levels;
-      currentLevel = 1;
-      lives = INITIAL_LIVES;
-      resetLevel(1);
-    }
-
-    function resetPlayerToTrampolineCenter() {
-      const levelCfg = levelConfigs[currentLevel - 1];
-      const trampWidth = W * levelCfg.trampWidthRatio;
-      trampoline.width = trampWidth;
-      trampoline.speed = levelCfg.trampSpeed;
-      trampoline.x = W * 0.5;
-      trampoline.y = H - 40;
-      trampoline.dir = 1;
-
-      player.x = trampoline.x;
-      player.y = trampoline.y - trampoline.height / 2 - player.radius - 1;
-      player.vx = 0;
-      player.vy = 0;
-      player.bouncing = false;
-    }
-
-    function resetLevel(level) {
-      currentLevel = level;
-      const cfg = levelConfigs[currentLevel - 1];
-      const lambdaL = LAMBDA_BASE * cfg.lambdaMultiplier;
-      cfg.lambda = lambdaL;
-
-      bounceCount = 0;
-      timer = LEVEL_TIME;
-      asteroids = [];
-      alienProjectiles = []; 
-      hearts = [];
-      stars = [];
-      husks = cfg.husks.map(h => ({ ...h }));
-      alienDir = 1;
-      alienLanded = false;
-      alienLandingGraceTimer = 0;
-      lastProjectileTime = 0;
-      winEffect = null; 
-      alienOpacity = 1.0;
-      isInvincible = false;
-
-      resetPlayerToTrampolineCenter();
-      alien = { x: W * 0.5, y: 25, vy: 0, size: alienConfig.size, restingY: 25 };
-
-      gameState = State.WAITING;
-      updateHUD();
-      updateStartButtonVisibility();
-
-      setStatus(
-        `${WORLDS[currentWorld].name} – LEVEL ${currentLevel}: ${cfg.theme}. ` +
-        `Press SPACE or ↑ to start. Survive 10 seconds, then land on the alien!`
-      );
-    }
-
-    function updateHUD() {
-      if (!currentWorld) {
-        hudLevel.textContent = 'Select a world';
-      } else {
-        const cfg = levelConfigs[currentLevel - 1];
-        const worldName = WORLDS[currentWorld].name.split(' ')[0]; // "Space" / "Earth"
-        hudLevel.textContent = `${worldName} ${currentLevel} / ${TOTAL_LEVELS_PER_WORLD}: ${cfg.theme}`;
-      }
-      hudLives.textContent = `❤️ x${lives}${isInvincible ? ' ✨' : ''}`;
-      hudTimer.textContent = `${timer.toFixed(1)}s`; 
-    }
-
-    function startLevelPlay() {
-      if (gameState === State.WAITING && !player.bouncing) {
-        ensureAudio();
-        player.bouncing = true;
-        bounceCount = 1;
-        const vup = computeBounceVelocity(bounceCount);
-        player.vy = -vup;
-        playLaunchSound(bounceCount);
-        gameState = State.PLAYING;
-        setStatus(
-          `LEVEL ${currentLevel} START! ` +
-          `Stay alive for 10 seconds. Avoid hazards and the alien suction beam.`
+      if (btnLeft) {
+        btnLeft.addEventListener(
+          "touchstart",
+          (e) => {
+            prevent(e);
+            keys.left = true;
+          },
+          { passive: false }
         );
-        updateStartButtonVisibility();
-      }
-    }
-
-    function computeBounceVelocity(N) {
-      return VMIN + (VMAX - VMIN) * (1 - Math.exp(-K * N));
-    }
-
-    /* ==========================================================
-       POWERUPS
-    ========================================================== */
-    function spawnHeart(dt) {
-      if (!currentWorld) return;
-      if (currentLevel < 5 || gameState !== State.PLAYING || hearts.length > 0) return;
-      const probability = dt / 8; 
-      if (Math.random() < probability) {
-        hearts.push({
-          x: W * 0.2 + Math.random() * W * 0.6,
-          y: -30,
-          vy: 0,
-          radius: 12,
-          deadly: false
+        btnLeft.addEventListener(
+          "touchend",
+          (e) => {
+            prevent(e);
+            keys.left = false;
+          },
+          { passive: false }
+        );
+        btnLeft.addEventListener("mousedown", (e) => {
+          e.preventDefault();
+          keys.left = true;
+        });
+        btnLeft.addEventListener("mouseup", (e) => {
+          e.preventDefault();
+          keys.left = false;
+        });
+        btnLeft.addEventListener("mouseleave", () => {
+          keys.left = false;
         });
       }
-    }
 
-    function updateHearts(dt) {
-      const HEART_GRAVITY_MULTIPLIER = 0.10; 
-      hearts.forEach(h => {
-        h.vy += GRAVITY * HEART_GRAVITY_MULTIPLIER * dt; 
-        h.y += h.vy * dt;
-      });
-      hearts = hearts.filter(h => h.y < H + h.radius);
-    }
-
-    function spawnStar(dt) {
-      if (!currentWorld) return;
-      if (currentLevel < 6 || gameState !== State.PLAYING || stars.length > 0) return;
-      const probability = dt / 10;
-      if (Math.random() < probability) {
-        stars.push({
-          x: W * 0.2 + Math.random() * W * 0.6,
-          y: -30,
-          vy: 0,
-          radius: 12
+      if (btnRight) {
+        btnRight.addEventListener(
+          "touchstart",
+          (e) => {
+            prevent(e);
+            keys.right = true;
+          },
+          { passive: false }
+        );
+        btnRight.addEventListener(
+          "touchend",
+          (e) => {
+            prevent(e);
+            keys.right = false;
+          },
+          { passive: false }
+        );
+        btnRight.addEventListener("mousedown", (e) => {
+          e.preventDefault();
+          keys.right = true;
+        });
+        btnRight.addEventListener("mouseup", (e) => {
+          e.preventDefault();
+          keys.right = false;
+        });
+        btnRight.addEventListener("mouseleave", () => {
+          keys.right = false;
         });
       }
-    }
 
-    function updateStars(dt) {
-      const STAR_GRAVITY_MULTIPLIER = 0.15;
-      stars.forEach(s => {
-        s.vy += GRAVITY * STAR_GRAVITY_MULTIPLIER * dt;
-        s.y += s.vy * dt;
-      });
-      stars = stars.filter(s => s.y < H + s.radius);
-    }
+      if (btnStart) {
+        btnStart.addEventListener(
+          "touchstart",
+          (e) => {
+            prevent(e);
+            keys.up = true;
+            triggerStart();
+          },
+          { passive: false }
+        );
 
-    /* ==========================================================
-       PROJECTILES
-    ========================================================== */
-    function fireProjectile(dt) {
-      if (!currentWorld) return;
-      const cfg = levelConfigs[currentLevel - 1];
-      const rate = cfg.projectileRate;
-      if (rate <= 0) return;
-      if (performance.now() - lastProjectileTime > (1000 / rate)) {
-        const dx = player.x - alien.x;
-        const dy = player.y - alien.y;
-        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-        const speed = 300;
-        const vx = (dx / dist) * speed;
-        const vy = (dy / dist) * speed;
+        btnStart.addEventListener(
+          "touchend",
+          (e) => {
+            prevent(e);
+            keys.up = false;
+          },
+          { passive: false }
+        );
 
-        alienProjectiles.push({
-          x: alien.x,
-          y: alien.y + alien.size * 0.5,
-          vx, vy,
-          radius: 6,
-          deadly: true
+        btnStart.addEventListener("click", (e) => {
+          e.preventDefault();
+          keys.up = true;
+          triggerStart();
+          setTimeout(() => {
+            keys.up = false;
+          }, 50);
         });
-        
-        playProjectileFire();
-        lastProjectileTime = performance.now();
-      }
-    }
-
-    function updateProjectiles(dt) {
-      alienProjectiles.forEach(p => {
-        p.x += p.vx * dt;
-        p.y += p.vy * dt;
-      });
-      alienProjectiles = alienProjectiles.filter(p =>
-        p.x > -10 && p.x < W + 10 && p.y > -10 && p.y < H + 10
-      );
-    }
-
-    /* ==========================================================
-       ASTEROIDS / BIRDS & HUSKS / CACTI
-    ========================================================== */
-    function spawnAsteroid(dt) {
-      if (!currentWorld) return;
-      const cfg = levelConfigs[currentLevel - 1];
-      const lambda = cfg.lambda;
-      const prob = lambda * dt;
-      if (Math.random() >= prob) return;
-
-      const dirRand = Math.random();
-      let type;
-      if (dirRand < cfg.dirMix.H) type = 'H';
-      else if (dirRand < cfg.dirMix.H + cfg.dirMix.D) type = 'D';
-      else type = 'V';
-
-      const size = 24 + Math.random() * 12;
-      let x, y, vx, vy;
-
-      if (type === 'H') {
-        const fromLeft = Math.random() < 0.5;
-        y = 150 + Math.random() * (H - 260);
-        x = fromLeft ? -size - 10 : W + size + 10;
-        const speed = 140 + Math.random() * 100;
-        vx = fromLeft ? speed : -speed;
-        vy = 0;
-      } else if (type === 'V') {
-        x = 80 + Math.random() * (W - 160);
-        y = -size - 10;
-        vx = 0;
-        vy = 160 + Math.random() * 100;
-      } else {
-        const fromLeft = Math.random() < 0.5;
-        x = fromLeft ? -size - 10 : W + size + 10;
-        y = 80 + Math.random() * 200;
-        const sp = 170 + Math.random() * 100;
-        vx = fromLeft ? sp : -sp;
-        vy = 50 + Math.random() * 80;
       }
 
-      asteroids.push({ x, y, vx, vy, size });
-    }
-
-    function updateAsteroids(dt) {
-      if (gameState !== State.PLAYING) return;
-      for (let a of asteroids) {
-        a.x += a.vx * dt;
-        a.y += a.vy * dt;
-      }
-      asteroids = asteroids.filter(a =>
-        a.x > -a.size - 60 &&
-        a.x < W + a.size + 60 &&
-        a.y > -a.size - 60 &&
-        a.y < H + a.size + 60
-      );
-    }
-
-    /* ==========================================================
-       TRAMPOLINE
-    ========================================================== */
-    function updateTrampoline(dt) {
-      if (!currentWorld) return;
-      const cfg = levelConfigs[currentLevel - 1];
-      trampoline.speed = cfg.trampSpeed;
-      const halfWidth = trampoline.width / 2;
-      
-      if (gameState === State.POST_TIMER) {
-        trampoline.width = W;
-        trampoline.speed = 0;
-        trampoline.x = W * 0.5;
-        return;
-      }
-
-      if (trampoline.speed > 0) {
-        trampoline.x += trampoline.dir * trampoline.speed * dt;
-        if (trampoline.x - halfWidth < 40) {
-          trampoline.x = 40 + halfWidth;
-          trampoline.dir *= -1;
-        } else if (trampoline.x + halfWidth > W - 40) {
-          trampoline.x = W - 40 - halfWidth;
-          trampoline.dir *= -1;
+      /* ==========================================================
+         AUDIO
+      ========================================================== */
+      let audioCtx = null;
+      function ensureAudio() {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         }
       }
+
+      function playBeep(freq, duration, type = "sine", gainValue = 0.08) {
+        try {
+          ensureAudio();
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = type;
+          osc.frequency.value = freq;
+          gain.gain.value = gainValue;
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          const now = audioCtx.currentTime;
+          osc.start(now);
+          osc.stop(now + duration);
+          gain.gain.setTargetAtTime(
+            0.0001,
+            now + duration * 0.4,
+            duration * 0.3
+          );
+        } catch (e) {}
+      }
+
+      function playLaunchSound(bounceCount) {
+        const baseFreq = 300;
+        const freq = baseFreq + bounceCount * 30;
+        playBeep(freq, 0.12, "sawtooth", 0.12);
+      }
+
+      function playDeathSound() {
+        ensureAudio();
+        try {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = "square";
+          osc.frequency.setValueAtTime(180, audioCtx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(
+            60,
+            audioCtx.currentTime + 0.35
+          );
+          gain.gain.setValueAtTime(0.16, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(
+            0.0001,
+            audioCtx.currentTime + 0.4
+          );
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.4);
+        } catch (e) {}
+      }
+
+      function playAlienSuckSound() {
+        ensureAudio();
+        try {
+          const now = audioCtx.currentTime;
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = "sawtooth";
+          osc.frequency.setValueAtTime(600, now);
+          osc.frequency.exponentialRampToValueAtTime(80, now + 0.45);
+          gain.gain.setValueAtTime(0.18, now);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.45);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 0.5);
+        } catch (e) {}
+      }
+
+      function playSuccessSound() {
+        ensureAudio();
+        try {
+          const now = audioCtx.currentTime;
+          const freqs = [523.25, 659.25, 783.99, 1046.5];
+          freqs.forEach((f, i) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = "triangle";
+            osc.frequency.value = f;
+            gain.gain.setValueAtTime(0.2, now + i * 0.12);
+            gain.gain.exponentialRampToValueAtTime(
+              0.0001,
+              now + i * 0.12 + 0.3
+            );
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now + i * 0.12);
+            osc.stop(now + i * 0.12 + 0.32);
+          });
+
+          const bassOsc = audioCtx.createOscillator();
+          const bassGain = audioCtx.createGain();
+          bassOsc.type = "sine";
+          bassOsc.frequency.setValueAtTime(130.81, now);
+          bassGain.gain.setValueAtTime(0.14, now);
+          bassGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.5);
+          bassOsc.connect(bassGain);
+          bassGain.connect(audioCtx.destination);
+          bassOsc.start(now);
+          bassOsc.stop(now + 0.55);
+        } catch (e) {}
+      }
+
+      function playDangerHum(intensity) {
+        if (intensity <= 0 || !audioCtx) return;
+        playBeep(120 + 40 * intensity, 0.08, "sine", 0.02 * intensity);
+      }
+
+      function playProjectileFire() {
+        ensureAudio();
+        playBeep(400, 0.05, "square", 0.1);
+      }
+
+      function playHeartCollectSound() {
+        ensureAudio();
+        playBeep(880, 0.1, "triangle", 0.15);
+        setTimeout(() => playBeep(1320, 0.1, "triangle", 0.15), 50);
+      }
+
+      let lastMusicTick = 0;
+
+      /* ==========================================================
+         ENTITIES & GAME STATE
+      ========================================================== */
+      const player = {
+        x: W * 0.5,
+        y: H - 80,
+        vx: 0,
+        vy: 0,
+        radius: 14,
+        bouncing: false,
+      };
+
+      const trampoline = {
+        x: W * 0.5,
+        y: H - 40,
+        width: W,
+        height: 14,
+        dir: 1,
+        speed: 0,
+      };
+
+      let asteroids = [];
+      let husks = [];
+      let alienProjectiles = [];
+      let hearts = [];
+      let stars = [];
+      let alien = null;
+      let alienDir = 1;
+      let alienLanded = false;
+      let lastProjectileTime = 0;
+      let winEffect = null;
+      let alienOpacity = 1.0;
+      let isInvincible = false;
+      let deathEffect = null;
+      let alienLandingGraceTimer = 0;
+      const ALIEN_LANDING_GRACE = 0.4;
+
+      const alienConfig = { size: 28 };
+
+      const State = {
+        HOME: "home",
+        WAITING: "waiting",
+        PLAYING: "playing",
+        POST_TIMER: "postTimer",
+        LEVEL_COMPLETE: "levelComplete",
+        GAME_OVER: "gameOver",
+        WIN: "win",
+      };
+
+      let gameState = State.HOME;
+
+      let currentWorld = null; // 'space' or 'earth'
+      let currentLevel = 1;
+      let levelConfigs = spaceLevels; // pointer for current world
+      let earthUnlocked = false;
+      let seaUnlocked = true; // Set to false to follow unlock progression
+
+      let lives = INITIAL_LIVES;
+      let bounceCount = 0;
+      let timer = LEVEL_TIME;
+      let lastTimestamp = null;
+
+      function setStatus(msg) {
+        console.log("[STATUS]", msg);
+      }
+
+      function updateStartButtonVisibility() {
+        if (!btnStart) return;
+        if (gameState === State.PLAYING || gameState === State.POST_TIMER) {
+          btnStart.style.display = "none";
+        } else {
+          btnStart.style.display = "block";
+        }
+      }
+
+      /* ==========================================================
+         WORLD / LEVEL MANAGEMENT
+      ========================================================== */
+      function enterWorld(worldId) {
+        currentWorld = worldId;
+        levelConfigs = WORLDS[worldId].levels;
+        currentLevel = 1;
+        lives = INITIAL_LIVES;
+        resetLevel(1);
+      }
+
+      function resetPlayerToTrampolineCenter() {
+        const levelCfg = levelConfigs[currentLevel - 1];
+        const trampWidth = W * levelCfg.trampWidthRatio;
+        trampoline.width = trampWidth;
+        trampoline.speed = levelCfg.trampSpeed;
+        trampoline.x = W * 0.5;
+        trampoline.y = H - 40;
+        trampoline.dir = 1;
+
+        player.x = trampoline.x;
+        player.y = trampoline.y - trampoline.height / 2 - player.radius - 1;
+        player.vx = 0;
+        player.vy = 0;
+        player.bouncing = false;
+      }
+
+      function resetLevel(level) {
+        currentLevel = level;
+        const cfg = levelConfigs[currentLevel - 1];
+        const lambdaL = LAMBDA_BASE * cfg.lambdaMultiplier;
+        cfg.lambda = lambdaL;
+
+        bounceCount = 0;
+        timer = LEVEL_TIME;
+        asteroids = [];
+        alienProjectiles = [];
+        hearts = [];
+        stars = [];
+        husks = cfg.husks.map((h) => ({ ...h }));
+        alienDir = 1;
+        alienLanded = false;
+        alienLandingGraceTimer = 0;
+        lastProjectileTime = 0;
+        winEffect = null;
+        alienOpacity = 1.0;
+        isInvincible = false;
+
+        resetPlayerToTrampolineCenter();
+        alien = {
+          x: W * 0.5,
+          y: 25,
+          vy: 0,
+          size: alienConfig.size,
+          restingY: 25,
+        };
+
+        gameState = State.WAITING;
+        updateHUD();
+        updateStartButtonVisibility();
+
+        setStatus(
+          `${WORLDS[currentWorld].name} – LEVEL ${currentLevel}: ${
+            cfg.theme
+          }. ` +
+            `Press SPACE or ↑ to start. Survive 10 seconds, then land on the alien!`
+        );
+      }
+
+      function updateHUD() {
+        if (!currentWorld) {
+          hudLevel.textContent = "Select a world";
+        } else {
+          const cfg = levelConfigs[currentLevel - 1];
+          const worldName = WORLDS[currentWorld].name.split(" ")[0]; // "Space" / "Earth" / "Sea"
+          hudLevel.textContent = `${worldName} ${currentLevel} / ${TOTAL_LEVELS_PER_WORLD}: ${cfg.theme}`;
+        }
+        hudLives.textContent = `❤️ x${lives}${isInvincible ? " ✨" : ""}`;
+        hudTimer.textContent = `${timer.toFixed(1)}s`;
+      }
+
+      function startLevelPlay() {
+        if (gameState === State.WAITING && !player.bouncing) {
+          ensureAudio();
+          player.bouncing = true;
+          bounceCount = 1;
+          const vup = computeBounceVelocity(bounceCount);
+          player.vy = -vup;
+          playLaunchSound(bounceCount);
+          gameState = State.PLAYING;
+          setStatus(
+            `LEVEL ${currentLevel} START! ` +
+              `Stay alive for 10 seconds. Avoid hazards and the alien suction beam.`
+          );
+          updateStartButtonVisibility();
+        }
+      }
+
+      function computeBounceVelocity(N) {
+        return VMIN + (VMAX - VMIN) * (1 - Math.exp(-K * N));
+      }
+
+      /* ==========================================================
+         POWERUPS
+      ========================================================== */
+      function spawnHeart(dt) {
+        if (!currentWorld) return;
+        if (currentLevel < 5 || gameState !== State.PLAYING || hearts.length > 0)
+          return;
+        const probability = dt / 8;
+        if (Math.random() < probability) {
+          hearts.push({
+            x: W * 0.2 + Math.random() * W * 0.6,
+            y: -30,
+            vy: 0,
+            radius: 12,
+            deadly: false,
+          });
+        }
+      }
+
+      function updateHearts(dt) {
+        const HEART_GRAVITY_MULTIPLIER = 0.1;
+        hearts.forEach((h) => {
+          h.vy += GRAVITY * HEART_GRAVITY_MULTIPLIER * dt;
+          h.y += h.vy * dt;
+        });
+        hearts = hearts.filter((h) => h.y < H + h.radius);
+      }
+
+      function spawnStar(dt) {
+        if (!currentWorld) return;
+        if (currentLevel < 6 || gameState !== State.PLAYING || stars.length > 0)
+          return;
+        const probability = dt / 10;
+        if (Math.random() < probability) {
+          stars.push({
+            x: W * 0.2 + Math.random() * W * 0.6,
+            y: -30,
+            vy: 0,
+            radius: 12,
+          });
+        }
+      }
+
+      function updateStars(dt) {
+        const STAR_GRAVITY_MULTIPLIER = 0.15;
+        stars.forEach((s) => {
+          s.vy += GRAVITY * STAR_GRAVITY_MULTIPLIER * dt;
+          s.y += s.vy * dt;
+        });
+        stars = stars.filter((s) => s.y < H + s.radius);
+      }
+
+      /* ==========================================================
+         PROJECTILES
+      ========================================================== */
+      function fireProjectile(dt) {
+        if (!currentWorld) return;
+        const cfg = levelConfigs[currentLevel - 1];
+        const rate = cfg.projectileRate;
+        if (rate <= 0) return;
+        if (performance.now() - lastProjectileTime > 1000 / rate) {
+          const dx = player.x - alien.x;
+          const dy = player.y - alien.y;
+          const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+          const speed = 300;
+          const vx = (dx / dist) * speed;
+          const vy = (dy / dist) * speed;
+
+          alienProjectiles.push({
+            x: alien.x,
+            y: alien.y + alien.size * 0.5,
+            vx,
+            vy,
+            radius: 6,
+            deadly: true,
+          });
+
+          playProjectileFire();
+          lastProjectileTime = performance.now();
+        }
+      }
+
+      function updateProjectiles(dt) {
+        alienProjectiles.forEach((p) => {
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+        });
+        alienProjectiles = alienProjectiles.filter(
+          (p) =>
+            p.x > -10 && p.x < W + 10 && p.y > -10 && p.y < H + 10
+        );
+      }
+
+      /* ==========================================================
+         ASTEROIDS / BIRDS / SHARKS & HUSKS / CACTI / ICEBERGS
+      ========================================================== */
+ function spawnAsteroid(dt) {
+  if (!currentWorld) return;
+  const cfg = levelConfigs[currentLevel - 1];
+  const lambda = cfg.lambda;
+  const prob = lambda * dt;
+  if (Math.random() >= prob) return;
+
+  const dirRand = Math.random();
+  let type;
+  if (dirRand < cfg.dirMix.H) type = 'H';
+  else if (dirRand < cfg.dirMix.H + cfg.dirMix.D) type = 'D';
+  else type = 'V';
+
+  // In Sea Land, sharks are horizontal only
+  if (currentWorld === 'sea') {
+    type = 'H';
+  }
+
+  const size = 24 + Math.random() * 12;
+  let x, y, vx, vy;
+
+  if (type === 'H') {
+    const fromLeft = Math.random() < 0.5;
+
+    // SEA: sharks travel at a fixed height slightly above the water surface
+    if (currentWorld === 'sea') {
+      const waterSurfaceY = getWaterSurfaceY();
+      const sharkOffset = 10; // how far above the water line
+      y = waterSurfaceY - sharkOffset;
+    } else {
+      // original vertical randomization for other worlds
+      y = 150 + Math.random() * (H - 260);
     }
 
-    function drawTrampoline() {
-      if (!currentWorld) return;
-      const halfWidth = trampoline.width / 2;
-      const x = trampoline.x - halfWidth;
-      const y = trampoline.y - trampoline.height / 2;
+    x = fromLeft ? -size - 10 : W + size + 10;
+    const speed = 140 + Math.random() * 100;
+    vx = fromLeft ? speed : -speed;
+    vy = 0;
+  } else if (type === 'V') {
+    // vertical falling hazard
+    x = 80 + Math.random() * (W - 160);
+    y = -size - 10;
+    vx = 0;
+    vy = 160 + Math.random() * 100;
+  } else {
+    // diagonal movers
+    const fromLeft = Math.random() < 0.5;
+    x = fromLeft ? -size - 10 : W + size + 10;
+    y = 80 + Math.random() * 200;
+    const sp = 170 + Math.random() * 100;
+    vx = fromLeft ? sp : -sp;
+    vy = 50 + Math.random() * 80;
+  }
 
-      const grd = ctx.createLinearGradient(x, y, x, y + trampoline.height);
-      grd.addColorStop(0, '#3ef19e');
-      grd.addColorStop(1, '#17a45f');
-      ctx.fillStyle = grd;
-      ctx.fillRect(x, y, trampoline.width, trampoline.height);
+  asteroids.push({ x, y, vx, vy, size });
+}
 
-      ctx.strokeStyle = '#0a4f31';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-      ctx.lineTo(x, y + trampoline.height);
-      ctx.moveTo(x + trampoline.width, y);
-      ctx.lineTo(x + trampoline.width, y + trampoline.height);
-      ctx.stroke();
-      ctx.lineWidth = 1;
-    }
 
-    /* ==========================================================
-       COLLISION HELPERS
-    ========================================================== */
-    function circleRectCollision(cx, cy, cr, rx, ry, rw, rh) {
-      const closestX = Math.max(rx, Math.min(cx, rx + rw));
-      const closestY = Math.max(ry, Math.min(cy, ry + rh));
-      const dx = cx - closestX;
-      const dy = cy - closestY;
-      return (dx * dx + dy * dy) <= cr * cr;
-    }
+      function updateAsteroids(dt) {
+        if (gameState !== State.PLAYING) return;
+        for (let a of asteroids) {
+          a.x += a.vx * dt;
+          a.y += a.vy * dt;
+        }
+        asteroids = asteroids.filter(
+          (a) =>
+            a.x > -a.size - 60 &&
+            a.x < W + a.size + 60 &&
+            a.y > -a.size - 60 &&
+            a.y < H + a.size + 60
+        );
+      }
 
-    function circleCircleCollision(ax, ay, ar, bx, by, br) {
-      const dx = ax - bx;
-      const dy = ay - by;
-      const distSq = dx * dx + dy * dy;
-      const r = ar + br;
-      return distSq <= r * r;
-    }
+      /* ==========================================================
+         TRAMPOLINE
+      ========================================================== */
+      function updateTrampoline(dt) {
+        if (!currentWorld) return;
+        const cfg = levelConfigs[currentLevel - 1];
+        trampoline.speed = cfg.trampSpeed;
+        const halfWidth = trampoline.width / 2;
 
-    function checkTrampolineCollision(prevY) {
-      const halfWidth = trampoline.width / 2;
-      const rx = trampoline.x - halfWidth;
-      const ry = trampoline.y - trampoline.height / 2;
-      const rw = trampoline.width;
-      const rh = trampoline.height;
+        if (gameState === State.POST_TIMER) {
+          trampoline.width = W;
+          trampoline.speed = 0;
+          trampoline.x = W * 0.5;
+          return;
+        }
 
-      const surfaceY = ry;
+        if (trampoline.speed > 0) {
+          trampoline.x += trampoline.dir * trampoline.speed * dt;
+          if (trampoline.x - halfWidth < 40) {
+            trampoline.x = 40 + halfWidth;
+            trampoline.dir *= -1;
+          } else if (trampoline.x + halfWidth > W - 40) {
+            trampoline.x = W - 40 - halfWidth;
+            trampoline.dir *= -1;
+          }
+        }
+      }
 
-      const horizOverlap =
-        (player.x + player.radius > rx) &&
-        (player.x - player.radius < rx + rw);
+      function drawTrampoline() {
+        if (!currentWorld) return;
+        const halfWidth = trampoline.width / 2;
+        const x = trampoline.x - halfWidth;
+        const y = trampoline.y - trampoline.height / 2;
 
-      if (player.vy > 0 && horizOverlap) {
-        const prevBottom = prevY + player.radius;
-        const currBottom = player.y + player.radius;
-        if (prevBottom <= surfaceY && currBottom >= surfaceY) {
+        const grd = ctx.createLinearGradient(x, y, x, y + trampoline.height);
+        grd.addColorStop(0, "#3ef19e");
+        grd.addColorStop(1, "#17a45f");
+        ctx.fillStyle = grd;
+        ctx.fillRect(x, y, trampoline.width, trampoline.height);
+
+        ctx.strokeStyle = "#0a4f31";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x, y + trampoline.height);
+        ctx.moveTo(x + trampoline.width, y);
+        ctx.lineTo(x + trampoline.width, y + trampoline.height);
+        ctx.stroke();
+        ctx.lineWidth = 1;
+      }
+
+      /* ==========================================================
+         COLLISION HELPERS
+      ========================================================== */
+      function circleRectCollision(cx, cy, cr, rx, ry, rw, rh) {
+        const closestX = Math.max(rx, Math.min(cx, rx + rw));
+        const closestY = Math.max(ry, Math.min(cy, ry + rh));
+        const dx = cx - closestX;
+        const dy = cy - closestY;
+        return dx * dx + dy * dy <= cr * cr;
+      }
+
+      function circleCircleCollision(ax, ay, ar, bx, by, br) {
+        const dx = ax - bx;
+        const dy = ay - by;
+        const distSq = dx * dx + dy * dy;
+        const r = ar + br;
+        return distSq <= r * r;
+      }
+
+      function checkTrampolineCollision(prevY) {
+        const halfWidth = trampoline.width / 2;
+        const rx = trampoline.x - halfWidth;
+        const ry = trampoline.y - trampoline.height / 2;
+        const rw = trampoline.width;
+        const rh = trampoline.height;
+
+        const surfaceY = ry;
+
+        const horizOverlap =
+          player.x + player.radius > rx &&
+          player.x - player.radius < rx + rw;
+
+        if (player.vy > 0 && horizOverlap) {
+          const prevBottom = prevY + player.radius;
+          const currBottom = player.y + player.radius;
+          if (prevBottom <= surfaceY && currBottom >= surfaceY) {
+            player.y = surfaceY - player.radius - 0.5;
+            return true;
+          }
+        }
+
+        if (
+          player.vy > 0 &&
+          circleRectCollision(player.x, player.y, player.radius, rx, ry, rw, rh)
+        ) {
           player.y = surfaceY - player.radius - 0.5;
           return true;
         }
+
+        return false;
       }
 
-      if (
-        player.vy > 0 &&
-        circleRectCollision(player.x, player.y, player.radius, rx, ry, rw, rh)
-      ) {
-        player.y = surfaceY - player.radius - 0.5;
+      function bounceOnTrampoline() {
+        if (gameState === State.PLAYING) {
+          bounceCount++;
+          const vup = computeBounceVelocity(bounceCount);
+          player.vy = -vup;
+          playLaunchSound(bounceCount);
+          updateHUD();
+        } else {
+          player.vy *= -0.5;
+        }
+      }
+
+      function checkAsteroidCollision() {
+        for (let a of asteroids) {
+          if (
+            circleRectCollision(
+              player.x,
+              player.y,
+              player.radius,
+              a.x - a.size / 2,
+              a.y - a.size / 2,
+              a.size,
+              a.size
+            )
+          ) {
+            return true;
+          }
+        }
+        return false;
+      }
+
+function checkHuskCollision() {
+  for (let h of husks) {
+    if (currentWorld === 'sea') {
+      const baseY = getIcebergBaseY(h);   // same bobbing as draw
+
+      const width  = h.size * 3.0;
+      const height = h.size * 4.0;
+      const rx = h.x - width / 2;
+      const ry = baseY - height;
+
+      if (circleRectCollision(player.x, player.y, player.radius, rx, ry, width, height)) {
         return true;
       }
-
-      return false;
+    } else {
+      if (circleCircleCollision(player.x, player.y, player.radius, h.x, h.y, h.size)) {
+        return true;
+      }
     }
+  }
+  return false;
+}
 
-    function bounceOnTrampoline() {
-      if (gameState === State.PLAYING) {
-        bounceCount++;
-        const vup = computeBounceVelocity(bounceCount);
-        player.vy = -vup;
-        playLaunchSound(bounceCount);
+
+
+
+      function checkProjectileCollision() {
+        for (let p of alienProjectiles) {
+          if (
+            p.deadly &&
+            circleCircleCollision(player.x, player.y, player.radius, p.x, p.y, p.radius)
+          ) {
+            p.deadly = false;
+            return true;
+          }
+        }
+        return false;
+      }
+
+      function checkHeartCollision() {
+        for (let i = hearts.length - 1; i >= 0; i--) {
+          const h = hearts[i];
+          if (
+            circleCircleCollision(
+              player.x,
+              player.y,
+              player.radius,
+              h.x,
+              h.y,
+              h.radius
+            )
+          ) {
+            lives++;
+            playHeartCollectSound();
+            setStatus("BONUS! +1 Life!");
+            hearts.splice(i, 1);
+            updateHUD();
+            return true;
+          }
+        }
+        return false;
+      }
+
+      function checkStarCollision() {
+        for (let i = stars.length - 1; i >= 0; i--) {
+          const s = stars[i];
+          if (
+            circleCircleCollision(
+              player.x,
+              player.y,
+              player.radius,
+              s.x,
+              s.y,
+              s.radius
+            )
+          ) {
+            isInvincible = true;
+            playHeartCollectSound();
+            setStatus("BONUS! Invincibility for this level!");
+            stars.splice(i, 1);
+            updateHUD();
+            return true;
+          }
+        }
+        return false;
+      }
+
+      /* ==========================================================
+         ALIEN & LANDING
+      ========================================================== */
+      function createAlienForPostTimer() {
+        const size = alienConfig.size;
+        trampoline.width = W;
+        trampoline.speed = 0;
+        trampoline.x = W * 0.5;
+        trampoline.dir = 0;
+        alien.vy = 260;
+        alien.restingY = trampoline.y - trampoline.height / 2 - size * 0.4;
+        alienLanded = false;
+        alienLandingGraceTimer = 0;
+        player.vy = Math.max(0, player.vy);
+      }
+
+      function updateAlien(dt) {
+        if (!alien || !currentWorld) return;
+        const cfg = levelConfigs[currentLevel - 1];
+
+        if (gameState === State.POST_TIMER) {
+          if (!alienLanded && alien.y < alien.restingY) {
+            alien.vy += GRAVITY * 0.1 * dt;
+            alien.y += alien.vy * dt;
+            if (alien.y >= alien.restingY) {
+              alien.y = alien.restingY;
+              alien.vy = 0;
+              alienLanded = true;
+              alienLandingGraceTimer = 0;
+            }
+          }
+        } else if (
+          gameState === State.PLAYING ||
+          gameState === State.WAITING
+        ) {
+          alien.y = 25;
+          const speed = cfg.alienSpeedTop;
+          if (speed > 0) {
+            alien.x += alienDir * speed * dt;
+            const margin = 60;
+            if (alien.x < margin) {
+              alien.x = margin;
+              alienDir *= -1;
+            } else if (alien.x > W - margin) {
+              alien.x = W - margin;
+              alienDir *= -1;
+            }
+          }
+          if (gameState === State.PLAYING) {
+            fireProjectile(dt);
+          }
+        }
+      }
+
+      function checkAlienLandingCircle() {
+        if (!alien) return false;
+        const baseRadius = alien.size * 1.0;
+        const bonusRadius = 16;
+        const alienRadius = baseRadius + bonusRadius;
+
+        const landed = circleCircleCollision(
+          player.x,
+          player.y,
+          player.radius,
+          alien.x,
+          alien.y,
+          alienRadius
+        );
+
+        if (!landed) {
+          const dx = Math.abs(player.x - alien.x);
+          const dy = player.y - alien.y;
+          if (dx < alienRadius * 0.8 && dy > 0 && dy < alienRadius * 0.7) {
+            return true;
+          }
+        }
+        return landed;
+      }
+
+      function loseLife(reason) {
+        if (gameState === State.GAME_OVER || gameState === State.WIN) return;
+
+        deathEffect = {
+          x: player.x,
+          y: player.y,
+          radius: player.radius,
+          time: 0,
+        };
+
+        winEffect = null;
+        alienOpacity = 1.0;
+
+        if (reason && reason.toLowerCase().includes("suction")) {
+          playAlienSuckSound();
+        } else {
+          playDeathSound();
+        }
+
+        lives--;
+        const prefix = reason ? `${reason} ` : "";
+
+        if (lives <= 0) {
+          gameState = State.GAME_OVER;
+          setStatus(
+            `${prefix}GAME OVER. ` +
+              `Press SPACE or ↑ to return Home.`
+          );
+        } else {
+          gameState = State.WAITING;
+          setStatus(
+            `${prefix}You lost a life. ` +
+              `Lives left: ${lives}. Press SPACE or ↑ to retry Level ${currentLevel}.`
+          );
+        }
+
+        resetPlayerToTrampolineCenter();
+        alien = {
+          x: W * 0.5,
+          y: 25,
+          vy: 0,
+          size: alienConfig.size,
+          restingY: 25,
+        };
+
+        asteroids = [];
+        alienProjectiles = [];
+        hearts = [];
+        stars = [];
+        timer = LEVEL_TIME;
+        bounceCount = 0;
+        alienLanded = false;
+        isInvincible = false;
         updateHUD();
-      } else {
-        player.vy *= -0.5;
+        updateStartButtonVisibility();
       }
-    }
 
-    function checkAsteroidCollision() {
-      for (let a of asteroids) {
-        if (circleRectCollision(
-          player.x, player.y, player.radius,
-          a.x - a.size / 2, a.y - a.size / 2, a.size, a.size
-        )) {
-          return true;
-        }
-      }
-      return false;
-    }
+      function displayWinScreen() {
+        playSuccessSound();
+        winEffect = {
+          x: player.x,
+          y: player.y,
+          radius: player.radius,
+          time: 0,
+        };
+        updateStartButtonVisibility();
+        alienOpacity = 1.0;
 
-    function checkHuskCollision() {
-      for (let h of husks) {
-        if (circleCircleCollision(player.x, player.y, player.radius, h.x, h.y, h.size)) {
-          return true;
-        }
-      }
-      return false;
-    }
-
-    function checkProjectileCollision() {
-      for (let p of alienProjectiles) {
-        if (p.deadly && circleCircleCollision(player.x, player.y, player.radius, p.x, p.y, p.radius)) {
-          p.deadly = false; 
-          return true; 
-        }
-      }
-      return false;
-    }
-
-    function checkHeartCollision() {
-      for (let i = hearts.length - 1; i >= 0; i--) {
-        const h = hearts[i];
-        if (circleCircleCollision(player.x, player.y, player.radius, h.x, h.y, h.radius)) {
-          lives++;
-          playHeartCollectSound();
-          setStatus('BONUS! +1 Life!');
-          hearts.splice(i, 1);
-          updateHUD();
-          return true;
+        if (gameState === State.WIN) {
+          setStatus(
+            `GAME COMPLETE! You mastered all worlds! Press SPACE or ↑ to return Home.`
+          );
+        } else if (
+          currentWorld === "space" &&
+          currentLevel === TOTAL_LEVELS_PER_WORLD
+        ) {
+          setStatus(
+            `Space Land cleared! Earth Land unlocked. Press SPACE or ↑ to return Home.`
+          );
+        } else if (
+          currentWorld === "earth" &&
+          currentLevel === TOTAL_LEVELS_PER_WORLD
+        ) {
+          setStatus(
+            `Earth Land cleared! Sea Land unlocked. Press SPACE or ↑ to return Home.`
+          );
+        } else {
+          setStatus(
+            `LEVEL ${currentLevel} COMPLETE! Press SPACE or ↑ for the next level.`
+          );
         }
       }
-      return false;
-    }
 
-    function checkStarCollision() {
-      for (let i = stars.length - 1; i >= 0; i--) {
-        const s = stars[i];
-        if (circleCircleCollision(player.x, player.y, player.radius, s.x, s.y, s.radius)) {
-          isInvincible = true;
-          playHeartCollectSound();
-          setStatus('BONUS! Invincibility for this level!');
-          stars.splice(i, 1);
-          updateHUD();
-          return true;
-        }
-      }
-      return false;
-    }
-
-    /* ==========================================================
-       ALIEN & LANDING
-    ========================================================== */
-    function createAlienForPostTimer() {
-      const size = alienConfig.size;
-      trampoline.width = W;
-      trampoline.speed = 0;
-      trampoline.x = W * 0.5;
-      trampoline.dir = 0;
-      alien.vy = 260; 
-      alien.restingY = trampoline.y - trampoline.height / 2 - size * 0.4;
-      alienLanded = false;
-      alienLandingGraceTimer = 0;
-      player.vy = Math.max(0, player.vy);
-    }
-
-    function updateAlien(dt) {
-      if (!alien || !currentWorld) return;
-      const cfg = levelConfigs[currentLevel - 1];
-
-      if (gameState === State.POST_TIMER) {
-        if (!alienLanded && alien.y < alien.restingY) {
-          alien.vy += GRAVITY * 0.1 * dt; 
-          alien.y  += alien.vy * dt;
-          if (alien.y >= alien.restingY) {
-            alien.y = alien.restingY;
-            alien.vy = 0;
-            alienLanded = true;
-            alienLandingGraceTimer = 0;
-          }
-        }
-      } else if (gameState === State.PLAYING || gameState === State.WAITING) {
-        alien.y = 25;
-        const speed = cfg.alienSpeedTop;
-        if (speed > 0) {
-          alien.x += alienDir * speed * dt;
-          const margin = 60;
-          if (alien.x < margin) {
-            alien.x = margin;
-            alienDir *= -1;
-          } else if (alien.x > W - margin) {
-            alien.x = W - margin;
-            alienDir *= -1;
-          }
-        }
+      /* ==========================================================
+         TIMER & MUSIC
+      ========================================================== */
+      function handleTimerAndMusic(dt) {
         if (gameState === State.PLAYING) {
-          fireProjectile(dt);
+          timer -= dt;
+          if (timer <= 0) {
+            timer = 0;
+            gameState = State.POST_TIMER;
+            setStatus(
+              "Time up! The alien is falling — land safely on it to complete the level."
+            );
+            createAlienForPostTimer();
+          }
         }
-      }
-    }
+        updateHUD();
 
-    function checkAlienLandingCircle() {
-      if (!alien) return false;
-      const baseRadius = alien.size * 1.0;
-      const bonusRadius = 16;
-      const alienRadius = baseRadius + bonusRadius;
-
-      const landed = circleCircleCollision(
-        player.x, player.y, player.radius,
-        alien.x, alien.y, alienRadius
-      );
-
-      if (!landed) {
-        const dx = Math.abs(player.x - alien.x);
-        const dy = player.y - alien.y;
-        if (dx < alienRadius * 0.8 && dy > 0 && dy < alienRadius * 0.7) {
-          return true;
-        }
-      }
-      return landed;
-    }
-
-    function loseLife(reason) {
-      if (gameState === State.GAME_OVER || gameState === State.WIN) return;
-
-      deathEffect = {
-        x: player.x,
-        y: player.y,
-        radius: player.radius,
-        time: 0
-      };
-
-      winEffect = null;
-      alienOpacity = 1.0;
-
-      if (reason && reason.toLowerCase().includes('suction')) {
-        playAlienSuckSound();
-      } else {
-        playDeathSound();
-      }
-
-      lives--;
-      const prefix = reason ? `${reason} ` : '';
-
-      if (lives <= 0) {
-        gameState = State.GAME_OVER;
-        setStatus(
-          `${prefix}GAME OVER. ` +
-          `Press SPACE or ↑ to return Home.`
-        );
-      } else {
-        gameState = State.WAITING;
-        setStatus(
-          `${prefix}You lost a life. ` +
-          `Lives left: ${lives}. Press SPACE or ↑ to retry Level ${currentLevel}.`
-        );
-      }
-      
-      resetPlayerToTrampolineCenter();
-      alien = { x: W * 0.5, y: 25, vy: 0, size: alienConfig.size, restingY: 25 }; 
-
-      asteroids = [];
-      alienProjectiles = []; 
-      hearts = [];
-      stars = [];
-      timer = LEVEL_TIME;
-      bounceCount = 0;
-      alienLanded = false;
-      isInvincible = false;
-      updateHUD();
-      updateStartButtonVisibility();
-    }
-
-    function displayWinScreen() {
-      playSuccessSound();
-      winEffect = {
-        x: player.x,
-        y: player.y,
-        radius: player.radius,
-        time: 0
-      };
-      updateStartButtonVisibility();
-      alienOpacity = 1.0; 
-
-      if (gameState === State.WIN) {
-        setStatus(`GAME COMPLETE! You mastered all worlds! Press SPACE or ↑ to return Home.`);
-      } else if (currentWorld === 'space' && currentLevel === TOTAL_LEVELS_PER_WORLD) {
-        setStatus(`Space Land cleared! Earth Land unlocked. Press SPACE or ↑ to return Home.`);
-      } else {
-        setStatus(`LEVEL ${currentLevel} COMPLETE! Press SPACE or ↑ for the next level.`);
-      }
-    }
-
-    /* ==========================================================
-       TIMER & MUSIC
-    ========================================================== */
-    function handleTimerAndMusic(dt) {
-      if (gameState === State.PLAYING) {
-        timer -= dt;
-        if (timer <= 0) {
-          timer = 0;
-          gameState = State.POST_TIMER;
-          setStatus('Time up! The alien is falling — land safely on it to complete the level.');
-          createAlienForPostTimer();
-        }
-      }
-      updateHUD();
-
-      if (gameState === State.PLAYING || gameState === State.POST_TIMER) {
-        const now = performance.now() / 1000;
-        const remaining = timer;
-        let interval;
-        if (remaining > 5) interval = 1.1;
-        else if (remaining > 2.5) interval = 0.5;
-        else interval = 0.25;
-        if (now - lastMusicTick > interval) {
-          lastMusicTick = now;
-          const base = 260 + currentLevel * 20;
-          const pitchRamp = (LEVEL_TIME - remaining) / LEVEL_TIME;
-          const freq = base + 140 * pitchRamp;
-          playBeep(freq, 0.08, 'triangle', 0.05);
-        }
-      }
-    }
-
-    function handleAlienThreatAudio() {
-      if (!alien || !audioCtx) return;
-      if (gameState === State.PLAYING) {
-        const dx = Math.abs(player.x - alien.x);
-        if (player.y < ALIEN_SUCTION_Y && dx <= ALIEN_BEAM_HALF_WIDTH * 1.2) {
-          const distY = Math.max(0, ALIEN_SUCTION_Y - player.y);
-          const intensity = Math.max(0.1, 1 - distY / 120);
-          playDangerHum(intensity);
-        }
-      }
-    }
-
-    /* ==========================================================
-       PLAYER UPDATE (with post-timer landing rules)
-    ========================================================== */
-    function updatePlayer(dt) {
-      const prevY = player.y;
-
-      if (keys.left)  player.vx -= AX * dt;
-      if (keys.right) player.vx += AX * dt;
-
-      if (!keys.left && !keys.right && player.y < MIDLINE_Y) {
-        player.vx *= (1 - DAMPING * dt);
-      }
-
-      player.vy += GRAVITY * dt;
-      player.x  += player.vx * dt;
-      player.y  += player.vy * dt;
-
-      if (player.y < CEILING_Y) {
-        player.y = CEILING_Y;
-        if (player.vy < 0) player.vy = 0;
-      }
-
-      if (player.x < player.radius) {
-        player.x = player.radius;
-        if (player.vx < 0) player.vx = 0;
-      }
-      if (player.x > W - player.radius) {
-        player.x = W - player.radius;
-        if (player.vx > 0) player.vx = 0;
-      }
-
-      if (gameState !== State.POST_TIMER) {
-        if (player.y > H + player.radius) {
-          loseLife('You fell out of bounds.');
-          return;
+        if (
+          gameState === State.PLAYING ||
+          gameState === State.POST_TIMER
+        ) {
+          const now = performance.now() / 1000;
+          const remaining = timer;
+          let interval;
+          if (remaining > 5) interval = 1.1;
+          else if (remaining > 2.5) interval = 0.5;
+          else interval = 0.25;
+          if (now - lastMusicTick > interval) {
+            lastMusicTick = now;
+            const base = 260 + currentLevel * 20;
+            const pitchRamp = (LEVEL_TIME - remaining) / LEVEL_TIME;
+            const freq = base + 140 * pitchRamp;
+            playBeep(freq, 0.08, "triangle", 0.05);
+          }
         }
       }
 
-      if (gameState === State.PLAYING && alien && player.y < ALIEN_SUCTION_Y) {
-        const dx = Math.abs(player.x - alien.x);
-        if (dx <= ALIEN_BEAM_HALF_WIDTH) {
-          loseLife('You got caught in the alien suction beam!');
-          return;
+      function handleAlienThreatAudio() {
+        if (!alien || !audioCtx) return;
+        if (gameState === State.PLAYING) {
+          const dx = Math.abs(player.x - alien.x);
+          if (
+            player.y < ALIEN_SUCTION_Y &&
+            dx <= ALIEN_BEAM_HALF_WIDTH * 1.2
+          ) {
+            const distY = Math.max(0, ALIEN_SUCTION_Y - player.y);
+            const intensity = Math.max(0.1, 1 - distY / 120);
+            playDangerHum(intensity);
+          }
         }
       }
 
-      if (gameState === State.PLAYING) {
-        if (checkTrampolineCollision(prevY)) {
-          bounceOnTrampoline();
+      /* ==========================================================
+         PLAYER UPDATE (with post-timer landing rules)
+      ========================================================== */
+      function updatePlayer(dt) {
+        const prevY = player.y;
+
+        if (keys.left) player.vx -= AX * dt;
+        if (keys.right) player.vx += AX * dt;
+
+        if (!keys.left && !keys.right && player.y < MIDLINE_Y) {
+          player.vx *= 1 - DAMPING * dt;
         }
 
-        if (!isInvincible) {
-          if (checkAsteroidCollision() || checkHuskCollision() || checkProjectileCollision()) {
-            loseLife('You hit an obstacle.');
+        player.vy += GRAVITY * dt;
+        player.x += player.vx * dt;
+        player.y += player.vy * dt;
+
+        if (player.y < CEILING_Y) {
+          player.y = CEILING_Y;
+          if (player.vy < 0) player.vy = 0;
+        }
+
+        if (player.x < player.radius) {
+          player.x = player.radius;
+          if (player.vx < 0) player.vx = 0;
+        }
+        if (player.x > W - player.radius) {
+          player.x = W - player.radius;
+          if (player.vx > 0) player.vx = 0;
+        }
+
+        if (gameState !== State.POST_TIMER) {
+          if (player.y > H + player.radius) {
+            loseLife("You fell out of bounds.");
             return;
           }
         }
 
-        checkHeartCollision();
-        checkStarCollision();
-        return;
-      }
-
-      if (gameState === State.POST_TIMER) {
-        if (alien && checkAlienLandingCircle()) {
-          if (currentLevel >= TOTAL_LEVELS_PER_WORLD) {
-            if (currentWorld === 'earth') {
-              gameState = State.WIN;
-            } else {
-              gameState = State.LEVEL_COMPLETE;
-            }
-          } else {
-            gameState = State.LEVEL_COMPLETE;
+        if (gameState === State.PLAYING && alien && player.y < ALIEN_SUCTION_Y) {
+          const dx = Math.abs(player.x - alien.x);
+          if (dx <= ALIEN_BEAM_HALF_WIDTH) {
+            loseLife("You got caught in the alien suction beam!");
+            return;
           }
-          displayWinScreen();
+        }
+
+        if (gameState === State.PLAYING) {
+          if (checkTrampolineCollision(prevY)) {
+            bounceOnTrampoline();
+          }
+
+          if (!isInvincible) {
+            if (
+              checkAsteroidCollision() ||
+              checkHuskCollision() ||
+              checkProjectileCollision()
+            ) {
+              loseLife("You hit an obstacle.");
+              return;
+            }
+          }
+
+          checkHeartCollision();
+          checkStarCollision();
           return;
         }
 
-        if (!alienLanded) {
-          checkTrampolineCollision(prevY);
-          return;
-        }
-
-        alienLandingGraceTimer += dt;
-
-        if (alienLandingGraceTimer <= ALIEN_LANDING_GRACE) {
+        if (gameState === State.POST_TIMER) {
           if (alien && checkAlienLandingCircle()) {
             if (currentLevel >= TOTAL_LEVELS_PER_WORLD) {
-              if (currentWorld === 'earth') {
+              if (currentWorld === "sea") {
+                // Check if Sea Land is beaten for final WIN
                 gameState = State.WIN;
               } else {
                 gameState = State.LEVEL_COMPLETE;
@@ -1374,864 +1824,1090 @@
             displayWinScreen();
             return;
           }
-          checkTrampolineCollision(prevY);
-          return;
-        }
 
-        if (alien && checkAlienLandingCircle()) {
-          if (currentLevel >= TOTAL_LEVELS_PER_WORLD) {
-            if (currentWorld === 'earth') {
-              gameState = State.WIN;
+          if (!alienLanded) {
+            checkTrampolineCollision(prevY);
+            return;
+          }
+
+          alienLandingGraceTimer += dt;
+
+          if (alienLandingGraceTimer <= ALIEN_LANDING_GRACE) {
+            if (alien && checkAlienLandingCircle()) {
+              if (currentLevel >= TOTAL_LEVELS_PER_WORLD) {
+                if (currentWorld === "sea") {
+                  gameState = State.WIN;
+                } else {
+                  gameState = State.LEVEL_COMPLETE;
+                }
+              } else {
+                gameState = State.LEVEL_COMPLETE;
+              }
+              displayWinScreen();
+              return;
+            }
+            checkTrampolineCollision(prevY);
+            return;
+          }
+
+          if (alien && checkAlienLandingCircle()) {
+            if (currentLevel >= TOTAL_LEVELS_PER_WORLD) {
+              if (currentWorld === "sea") {
+                gameState = State.WIN;
+              } else {
+                gameState = State.LEVEL_COMPLETE;
+              }
             } else {
               gameState = State.LEVEL_COMPLETE;
             }
-          } else {
-            gameState = State.LEVEL_COMPLETE;
+            displayWinScreen();
+            return;
           }
-          displayWinScreen();
+
+          const hitTrampoline = checkTrampolineCollision(prevY);
+          const offBottom = player.y > H + player.radius;
+
+          if (hitTrampoline || offBottom) {
+            loseLife(
+              "You missed the alien landing and hit the ground/trampoline."
+            );
+            return;
+          }
+
+          return;
+        }
+      }
+
+      /* ==========================================================
+         DRAWING
+      ========================================================== */
+      function drawBackground() {
+        ctx.save();
+
+        // HOME: use home.png full-screen if available
+        if (gameState === State.HOME && homeBgLoaded) {
+          const img = homeBgImg;
+          const imgRatio = img.width / img.height;
+          const canvasRatio = W / H;
+
+          let drawW, drawH, offsetX, offsetY;
+          if (canvasRatio > imgRatio) {
+            drawW = W;
+            drawH = W / imgRatio;
+            offsetX = 0;
+            offsetY = (H - drawH) / 2;
+          } else {
+            drawH = H;
+            drawW = H * imgRatio;
+            offsetY = 0;
+            offsetX = (W - drawW) / 2;
+          }
+
+          const yShift = 0; // move down a bit
+          ctx.drawImage(img, offsetX, offsetY + yShift, drawW, drawH);
+          ctx.restore();
           return;
         }
 
-        const hitTrampoline = checkTrampolineCollision(prevY);
-        const offBottom     = (player.y > H + player.radius);
+        // IN-GAME BACKGROUNDS (Space / Earth / Sea)
+        if (!currentWorld || currentWorld === "space") {
+          ctx.fillStyle = "#02030c";
+          ctx.fillRect(0, 0, W, H);
+          const gradient = ctx.createRadialGradient(
+            W / 2,
+            H * 0.2,
+            0,
+            W / 2,
+            H * 0.2,
+            H
+          );
+          gradient.addColorStop(0, "#151c3a");
+          gradient.addColorStop(0.5, "#050814");
+          gradient.addColorStop(1, "#000000");
+          ctx.fillStyle = gradient;
+          ctx.fillRect(0, 0, W, H);
+          ctx.fillStyle = "rgba(255,255,255,0.8)";
+          for (let i = 0; i < 40; i++) {
+            const x = (i * 73) % W;
+            const y = ((i * 131) % H) * 0.6;
+            const r = i % 3 === 0 ? 1.3 : 0.8;
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        } else if (currentWorld === "earth") {
+          const sky = ctx.createLinearGradient(0, 0, 0, H);
+          sky.addColorStop(0, "#59b5ff");
+          sky.addColorStop(0.6, "#f9d783");
+          sky.addColorStop(1, "#f5a623");
+          ctx.fillStyle = sky;
+          ctx.fillRect(0, 0, W, H);
 
-        if (hitTrampoline || offBottom) {
-          loseLife('You missed the alien landing and hit the ground/trampoline.');
-          return;
-        }
-
-        return;
-      }
-    }
-
-    /* ==========================================================
-       DRAWING
-    ========================================================== */
-    function drawBackground() {
-      ctx.save();
-
-      // HOME: use home.png full-screen if available
-      if (gameState === State.HOME && homeBgLoaded) {
-        const img = homeBgImg;
-        const imgRatio = img.width / img.height;
-        const canvasRatio = W / H;
-
-        let drawW, drawH, offsetX, offsetY;
-        if (canvasRatio > imgRatio) {
-          drawW = W;
-          drawH = W / imgRatio;
-          offsetX = 0;
-          offsetY = (H - drawH) / 2;
-        } else {
-          drawH = H;
-          drawW = H * imgRatio;
-          offsetY = 0;
-          offsetX = (W - drawW) / 2;
-        }
-
-        const yShift = 0; // move down a bit
-        ctx.drawImage(img, offsetX, offsetY + yShift, drawW, drawH);
-        ctx.restore();
-        return;
-      }
-
-      // IN-GAME BACKGROUNDS (Space / Earth)
-      if (!currentWorld || currentWorld === 'space') {
-        ctx.fillStyle = '#02030c';
-        ctx.fillRect(0, 0, W, H);
-        const gradient = ctx.createRadialGradient(W/2, H*0.2, 0, W/2, H*0.2, H);
-        gradient.addColorStop(0, '#151c3a');
-        gradient.addColorStop(0.5, '#050814');
-        gradient.addColorStop(1, '#000000');
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, W, H);
-        ctx.fillStyle = 'rgba(255,255,255,0.8)';
-        for (let i = 0; i < 40; i++) {
-          const x = (i * 73) % W;
-          const y = (i * 131) % H * 0.6;
-          const r = (i % 3 === 0) ? 1.3 : 0.8;
+          ctx.fillStyle = "rgba(255, 220, 150, 0.9)";
           ctx.beginPath();
-          ctx.arc(x, y, r, 0, Math.PI * 2);
+          ctx.moveTo(0, H * 0.65);
+          ctx.quadraticCurveTo(W * 0.25, H * 0.6, W * 0.5, H * 0.67);
+          ctx.quadraticCurveTo(W * 0.75, H * 0.72, W, H * 0.68);
+          ctx.lineTo(W, H);
+          ctx.lineTo(0, H);
+          ctx.closePath();
+          ctx.fill();
+} else if (currentWorld === 'sea') {
+  // Sea Background Logic – water surface a bit above the trampoline
+  const waterSurfaceY = getWaterSurfaceY();
+
+  // Sky from top down to the water surface
+  const sky = ctx.createLinearGradient(0, 0, 0, waterSurfaceY);
+  sky.addColorStop(0, '#59c7ff');
+  sky.addColorStop(1, '#a1e4ff');
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, W, waterSurfaceY);
+
+  // Ocean from water surface down to bottom
+  const ocean = ctx.createLinearGradient(0, waterSurfaceY, 0, H);
+  ocean.addColorStop(0, '#0097a7');
+  ocean.addColorStop(1, '#005f73');
+  ctx.fillStyle = ocean;
+  ctx.fillRect(0, waterSurfaceY, W, H - waterSurfaceY);
+
+  // Wavy water surface line for a visual effect
+  ctx.strokeStyle = '#80d8ff';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  const time = performance.now() * 0.001;
+  ctx.moveTo(0, waterSurfaceY);
+  for (let i = 0; i <= W; i += 20) {
+    const yOffset = Math.sin(i * 0.05 + time * 3) * 5;
+    ctx.lineTo(i, waterSurfaceY + yOffset);
+  }
+  ctx.stroke();
+}
+
+
+
+        ctx.restore();
+      }
+
+      function drawSuctionBeam() {
+        if (!alien || !currentWorld) return;
+        ctx.save();
+        const x = alien.x;
+        const top = 0;
+        const bottom = ALIEN_SUCTION_Y;
+        const beamWidth = ALIEN_BEAM_HALF_WIDTH * 2;
+
+        const grd = ctx.createLinearGradient(x, top, x, bottom);
+        grd.addColorStop(0, "rgba(182,120,255,0.0)");
+        grd.addColorStop(0.4, "rgba(182,120,255,0.25)");
+        grd.addColorStop(1, "rgba(130,60,220,0.45)");
+
+        ctx.fillStyle = grd;
+        ctx.fillRect(
+          x - ALIEN_BEAM_HALF_WIDTH,
+          top,
+          beamWidth,
+          bottom - top
+        );
+
+        ctx.strokeStyle = "rgba(220,180,255,0.6)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x - ALIEN_BEAM_HALF_WIDTH, top);
+        ctx.lineTo(x - ALIEN_BEAM_HALF_WIDTH, bottom);
+        ctx.moveTo(x + ALIEN_BEAM_HALF_WIDTH, top);
+        ctx.lineTo(x + ALIEN_BEAM_HALF_WIDTH, bottom);
+        ctx.stroke();
+
+        ctx.restore();
+      }
+
+      function drawPlayer() {
+        if (winEffect || deathEffect || !currentWorld) return;
+
+        ctx.save();
+
+        if (isInvincible) {
+          const time = performance.now() * 0.001;
+          const baseColor = Math.floor((time * 360) / 0.5);
+          ctx.lineWidth = 4;
+          for (let i = 0; i < 6; i++) {
+            const hue = (baseColor + i * 60) % 360;
+            ctx.strokeStyle = `hsl(${hue}, 100%, 70%)`;
+            ctx.beginPath();
+            ctx.arc(
+              player.x,
+              player.y,
+              player.radius + 4,
+              i * (Math.PI / 3),
+              (i + 1) * (Math.PI / 3)
+            );
+            ctx.stroke();
+          }
+          ctx.lineWidth = 1;
+        }
+
+        const glow = ctx.createRadialGradient(
+          player.x,
+          player.y,
+          player.radius * 0.2,
+          player.x,
+          player.y,
+          player.radius * 1.3
+        );
+        glow.addColorStop(0, "#5bd0ff");
+        glow.addColorStop(1, "#2044ff");
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = "rgba(255,255,255,0.5)";
+        ctx.beginPath();
+        ctx.arc(
+          player.x - 4,
+          player.y - 4,
+          player.radius * 0.5,
+          0,
+          Math.PI * 2
+        );
+        ctx.stroke();
+
+        ctx.restore();
+      }
+
+      function drawAsteroids() {
+        if (!currentWorld) return;
+        for (let a of asteroids) {
+          ctx.save();
+          ctx.translate(a.x, a.y);
+          const size = a.size;
+
+          if (currentWorld === "space") {
+            // Space: rotating rocks
+            ctx.rotate((a.x + a.y) * 0.002);
+
+            if (rockImgLoaded) {
+              ctx.drawImage(rockImg, -size / 2, -size / 2, size, size);
+            } else {
+              ctx.fillStyle = "#ff3b3b";
+              ctx.fillRect(-size / 2, -size / 2, size, size);
+            }
+          } else if (currentWorld === "earth") {
+            // Earth: birds with a little vertical wobble, no spin
+            const wobbleY =
+              Math.sin(performance.now() * 0.008 + a.x * 0.01) * 4;
+            ctx.translate(0, wobbleY);
+
+            if (birdImgLoaded) {
+              ctx.drawImage(birdImg, -size / 2, -size / 2, size, size);
+            } else {
+              ctx.fillStyle = "#2d3df5";
+              ctx.beginPath();
+              ctx.arc(0, 0, size / 2, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          } else if (currentWorld === "sea") {
+            // Sea: Sharks - flipped based on velocity
+            const scaleX = a.vx > 0 ? 1 : -1; // Flip the image if moving left
+            const size = a.size * 1.8;
+
+            ctx.scale(scaleX, 1);
+            if (sharkImgLoaded) {
+              ctx.drawImage(sharkImg, -size / 2, -size / 2, size, size);
+            } else {
+              ctx.fillStyle = "#f56342";
+              ctx.beginPath();
+              ctx.moveTo(0, -size / 2);
+              ctx.lineTo(size / 2, size / 2);
+              ctx.lineTo(-size / 2, size / 2);
+              ctx.closePath();
+              ctx.fill();
+            }
+          }
+          ctx.restore();
+        }
+      }
+
+      function drawHusks() {
+        if (!currentWorld) return;
+        for (let h of husks) {
+          const size = h.size * 2;
+
+          if (currentWorld === "space") {
+            if (asteroidImgLoaded) {
+              ctx.drawImage(
+                asteroidImg,
+                h.x - size / 2,
+                h.y - size / 2,
+                size,
+                size
+              );
+            } else {
+              ctx.fillStyle = "#9ea2b0";
+              ctx.strokeStyle = "#555a68";
+              ctx.lineWidth = 1.4;
+              const sides = 6;
+              const r = h.size;
+              ctx.beginPath();
+              for (let i = 0; i < sides; i++) {
+                const angle = ((Math.PI * 2) / sides) * i + Math.PI / 6;
+                const x = h.x + Math.cos(angle) * r;
+                const y = h.y + Math.sin(angle) * r;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+              }
+              ctx.closePath();
+              ctx.fill();
+              ctx.stroke();
+              ctx.lineWidth = 1;
+            }
+          } else if (currentWorld === "earth") {
+            if (cactusImgLoaded) {
+              ctx.drawImage(
+                cactusImg,
+                h.x - size / 2,
+                h.y - size / 2,
+                size,
+                size
+              );
+            } else {
+              ctx.fillStyle = "#2eaa3b";
+              ctx.fillRect(h.x - h.size / 2, h.y - h.size, h.size, h.size * 2);
+            }
+} else if (currentWorld === 'sea') {
+  // Sea: Tall icebergs rising out of the water, gently bobbing.
+  const baseY = getIcebergBaseY(h);  // <-- bobbing base Y
+
+  const width  = h.size * 3.5;
+  const height = h.size * 6;
+
+  if (icebergImgLoaded) {
+    ctx.drawImage(
+      icebergImg,
+      h.x - width / 2,
+      baseY - height,    // extend upward
+      width,
+      height
+    );
+  } else {
+    ctx.fillStyle = '#b3e5fc';
+    ctx.beginPath();
+    ctx.moveTo(h.x, baseY - height);        // tip
+    ctx.lineTo(h.x - width * 0.5, baseY);   // left base
+    ctx.lineTo(h.x + width * 0.5, baseY);   // right base
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
+        }
+      }
+
+      function drawProjectiles() {
+        if (!currentWorld) return;
+        ctx.fillStyle = "#f0d4ff";
+        for (let p of alienProjectiles) {
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
           ctx.fill();
         }
-      } else {
-        const sky = ctx.createLinearGradient(0, 0, 0, H);
-        sky.addColorStop(0, '#59b5ff');
-        sky.addColorStop(0.6, '#f9d783');
-        sky.addColorStop(1, '#f5a623');
-        ctx.fillStyle = sky;
+      }
+
+      function drawHearts() {
+        ctx.save();
+        ctx.font = "24px sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        for (let h of hearts) {
+          ctx.fillText("❤️", h.x, h.y + 2);
+        }
+        ctx.restore();
+      }
+
+      function drawStars() {
+        ctx.save();
+        ctx.font = "24px sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        for (let s of stars) {
+          ctx.fillText("⭐", s.x, s.y + 2);
+        }
+        ctx.restore();
+      }
+
+      function drawAlien() {
+        if (!alien || !currentWorld) return;
+        ctx.save();
+        ctx.globalAlpha = alienOpacity;
+        ctx.translate(alien.x, alien.y);
+        const s = alien.size;
+        ctx.beginPath();
+        ctx.moveTo(0, -s * 0.6);
+        ctx.lineTo(-s * 0.7, s * 0.4);
+        ctx.lineTo(s * 0.7, s * 0.4);
+        ctx.closePath();
+
+        const grad = ctx.createLinearGradient(-s, -s, s, s);
+        grad.addColorStop(0, "#b45bff");
+        grad.addColorStop(1, "#7b1cff");
+        ctx.fillStyle = grad;
+        ctx.fill();
+
+        ctx.strokeStyle = "#f0d4ff";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.arc(0, -s * 0.15, s * 0.18, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#22003a";
+        ctx.beginPath();
+        ctx.arc(0, -s * 0.15, s * 0.08, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+        ctx.lineWidth = 1;
+      }
+
+      function drawLandingTarget() {
+        if (!alien || !currentWorld) return;
+        const isPreviewTime = gameState === State.PLAYING && timer < 1.6;
+        const isFallingPhase =
+          gameState === State.POST_TIMER && !alienLanded;
+        if (!isPreviewTime && !isFallingPhase) return;
+
+        const indicatorWidth = alien.size * 2.5;
+        const indicatorHeight = 12;
+        const x = alien.x - indicatorWidth / 2;
+        const y = trampoline.y - trampoline.height - 6;
+        const alpha = 0.5 + Math.sin(performance.now() / 300) * 0.2;
+
+        ctx.save();
+        ctx.fillStyle = `rgba(180,255,180,${alpha})`;
+        ctx.fillRect(x, y, indicatorWidth, indicatorHeight);
+        ctx.restore();
+      }
+
+      function updateWinEffect(dt) {
+        if (!winEffect) return;
+        winEffect.time += dt;
+        const duration = 0.5;
+        if (winEffect.time <= duration) {
+          alienOpacity = 1.0 - winEffect.time / duration;
+        } else {
+          winEffect = null;
+          alienOpacity = 0.0;
+        }
+      }
+
+      function drawWinEffect() {
+        if (!winEffect) return;
+        const duration = 0.5;
+        const maxRadius = 150;
+        const opacity = 1.0 - winEffect.time / duration;
+        const currentRadius =
+          winEffect.radius + maxRadius * winEffect.time * 2;
+        ctx.save();
+        ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
+        ctx.lineWidth = 6 * opacity;
+        ctx.beginPath();
+        ctx.arc(winEffect.x, winEffect.y, currentRadius, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = `rgba(255, 255, 255, ${opacity * 0.8})`;
+        ctx.beginPath();
+        ctx.arc(
+          winEffect.x,
+          winEffect.y,
+          winEffect.radius * 2,
+          0,
+          Math.PI * 2
+        );
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function updateDeathEffect(dt) {
+        if (!deathEffect) return;
+        deathEffect.time += dt;
+        if (deathEffect.time > 0.4) {
+          deathEffect = null;
+        }
+      }
+
+      function drawDeathEffect() {
+        if (!deathEffect) return;
+        const duration = 0.4;
+        const t = deathEffect.time / duration;
+        const opacity = 1.0 - t;
+        const maxRadius = 120;
+        const currentRadius =
+          deathEffect.radius + maxRadius * t * 2;
+
+        ctx.save();
+        ctx.strokeStyle = `rgba(255, 120, 120, ${opacity})`;
+        ctx.lineWidth = 5 * opacity;
+        ctx.beginPath();
+        ctx.arc(deathEffect.x, deathEffect.y, currentRadius, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = `rgba(255, 200, 200, ${opacity * 0.8})`;
+        ctx.beginPath();
+        ctx.arc(
+          deathEffect.x,
+          deathEffect.y,
+          deathEffect.radius * 1.4,
+          0,
+          Math.PI * 2
+        );
+        ctx.fill();
+        ctx.restore();
+      }
+      function getIcebergBaseY(h) {
+  const t = performance.now() * 0.001; // seconds
+  const bob = Math.sin(t * ICEBERG_BOB_SPEED + h.x * 0.15) * ICEBERG_BOB_AMPLITUDE;
+  return getWaterSurfaceY() + ICEBERG_Y_OFFSET + bob;
+}
+
+
+      /* ==========================================================
+         UI OVERLAYS (HOME + INSTRUCTIONS + WIN)
+      ========================================================== */
+      function drawHomeScreen() {
+        ctx.save();
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+
+        // Dim background
+        ctx.fillStyle = "rgba(0,0,0,0.45)";
         ctx.fillRect(0, 0, W, H);
 
-        ctx.fillStyle = 'rgba(255, 220, 150, 0.9)';
-        ctx.beginPath();
-        ctx.moveTo(0, H * 0.65);
-        ctx.quadraticCurveTo(W * 0.25, H * 0.60, W * 0.5, H * 0.67);
-        ctx.quadraticCurveTo(W * 0.75, H * 0.72, W, H * 0.68);
-        ctx.lineTo(W, H);
-        ctx.lineTo(0, H);
-        ctx.closePath();
-        ctx.fill();
-      }
+        const boxWidth = 700; // Adjusted for three cards
+        const boxHeight = 280; // Adjusted for three cards
+        const boxX = W / 2 - boxWidth / 2;
+        const boxY = H / 2 - boxHeight / 2 + 20;
 
-      ctx.restore();
-    }
+        // Panel
+        ctx.fillStyle = "rgba(0,0,0,0.8)";
+        ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+        ctx.strokeStyle = "rgba(255,255,255,0.16)";
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(boxX + 0.5, boxY + 0.5, boxWidth - 1, boxHeight - 1);
 
-    function drawSuctionBeam() {
-      if (!alien || !currentWorld) return;
-      ctx.save();
-      const x = alien.x;
-      const top = 0;
-      const bottom = ALIEN_SUCTION_Y;
-      const beamWidth = ALIEN_BEAM_HALF_WIDTH * 2;
+        ctx.fillStyle = "#ffe8a9";
+        ctx.font = "24px system-ui";
+        ctx.fillText("Select a Land", W / 2, boxY + 32);
 
-      const grd = ctx.createLinearGradient(x, top, x, bottom);
-      grd.addColorStop(0, 'rgba(182,120,255,0.0)');
-      grd.addColorStop(0.4, 'rgba(182,120,255,0.25)');
-      grd.addColorStop(1, 'rgba(130,60,220,0.45)');
+        const cardWidth = 200; // Adjusted
+        const cardHeight = 120;
+        const cardY = boxY + 90;
+        const cardGap = 20;
 
-      ctx.fillStyle = grd;
-      ctx.fillRect(x - ALIEN_BEAM_HALF_WIDTH, top, beamWidth, bottom - top);
+        // Calculate positions for three cards
+        const totalCardsWidth = cardWidth * 3 + cardGap * 2;
+        const startX = W / 2 - totalCardsWidth / 2;
+        const spaceX = startX;
+        const earthX = startX + cardWidth + cardGap;
+        const seaX = startX + cardWidth * 2 + cardGap * 2;
 
-      ctx.strokeStyle = 'rgba(220,180,255,0.6)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(x - ALIEN_BEAM_HALF_WIDTH, top);
-      ctx.lineTo(x - ALIEN_BEAM_HALF_WIDTH, bottom);
-      ctx.moveTo(x + ALIEN_BEAM_HALF_WIDTH, top);
-      ctx.lineTo(x + ALIEN_BEAM_HALF_WIDTH, bottom);
-      ctx.stroke();
+        // Helper to draw card + overlay text
+        function drawLandCard(opts) {
+          const {
+            imgLoaded,
+            img,
+            x,
+            y,
+            w,
+            h,
+            borderColor,
+            title,
+            subtitle,
+            locked,
+          } = opts;
 
-      ctx.restore();
-    }
+          // Image or fallback
+          if (imgLoaded && img) {
+            ctx.drawImage(img, x, y, w, h);
+          } else {
+            ctx.fillStyle = "rgba(10,15,40,0.9)";
+            ctx.fillRect(x, y, w, h);
+          }
 
-    function drawPlayer() {
-      if (winEffect || deathEffect || !currentWorld) return;
+          // Border
+          ctx.strokeStyle = borderColor;
+          ctx.lineWidth = 1;
+          ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
 
-      ctx.save();
+          // Text overlay (shadow for readability)
+          const titleY = y + 14;
+          const subtitleY = y + h - 14;
 
-      if (isInvincible) {
-        const time = performance.now() * 0.001;
-        const baseColor = Math.floor(time * 360 / 0.5);
-        ctx.lineWidth = 4;
-        for (let i = 0; i < 6; i++) {
-          const hue = (baseColor + i * 60) % 360;
-          ctx.strokeStyle = `hsl(${hue}, 100%, 70%)`;
-          ctx.beginPath();
-          ctx.arc(player.x, player.y, player.radius + 4, 
-            i * (Math.PI / 3), (i + 1) * (Math.PI / 3));
-          ctx.stroke();
+          ctx.font = "15px system-ui";
+          ctx.textAlign = "center";
+
+          // drop shadow
+          ctx.shadowColor = "rgba(0,0,0,0.8)";
+          ctx.shadowBlur = 6;
+          ctx.shadowOffsetX = 0;
+          ctx.shadowOffsetY = 2;
+
+          if (locked) {
+            // darken card and show lock text
+            ctx.fillStyle = "rgba(0,0,0,0.45)";
+            ctx.fillRect(x, y, w, h);
+
+            ctx.fillStyle = "#ffaaaa";
+            ctx.fillText("Locked", x + w / 2, (y + y + h) / 2 - 8);
+
+            ctx.font = "12px system-ui";
+            ctx.fillStyle = "#ffd7d7";
+            ctx.fillText(
+              "Beat the previous Land first",
+              x + w / 2,
+              (y + y + h) / 2 + 12
+            );
+          } else {
+            // Title (world name) – top
+            ctx.font = "16px system-ui";
+            ctx.fillStyle = "#ffffff";
+            ctx.fillText(title, x + w / 2, titleY);
+
+            // Subtitle (levels) – bottom
+            ctx.font = "13px system-ui";
+            ctx.fillStyle = "#ffe8a9";
+            ctx.fillText(subtitle, x + w / 2, subtitleY);
+          }
+
+          // reset shadow
+          ctx.shadowColor = "transparent";
+          ctx.shadowBlur = 0;
+          ctx.shadowOffsetX = 0;
+          ctx.shadowOffsetY = 0;
         }
-        ctx.lineWidth = 1;
+
+        // Space Land card
+        drawLandCard({
+          imgLoaded: spaceTileLoaded,
+          img: spaceTileImg,
+          x: spaceX,
+          y: cardY,
+          w: cardWidth,
+          h: cardHeight,
+          borderColor: "#9dacff",
+          title: "Space",
+          subtitle: "Levels 1–10",
+          locked: false,
+        });
+
+        // Earth Land card
+        drawLandCard({
+          imgLoaded: earthTileLoaded,
+          img: earthTileImg,
+          x: earthX,
+          y: cardY,
+          w: cardWidth,
+          h: cardHeight,
+          borderColor: earthUnlocked ? "#f7c94a" : "rgba(255,255,255,0.2)",
+          title: "Earth",
+          subtitle: "Levels 11–20",
+          locked: !earthUnlocked,
+        });
+
+        // Sea Land card (NEW)
+        drawLandCard({
+          imgLoaded: seaTileLoaded,
+          img: seaTileImg,
+          x: seaX,
+          y: cardY,
+          w: cardWidth,
+          h: cardHeight,
+          borderColor: seaUnlocked ? "#59c7ff" : "rgba(255,255,255,0.2)",
+          title: "Sea",
+          subtitle: "Levels 21–30",
+          locked: !seaUnlocked,
+        });
+
+        // Footer hint
+        ctx.font = "13px system-ui";
+        ctx.fillStyle = "#9dacff";
+        ctx.textAlign = "center";
+        ctx.fillText(
+          "Click a land to begin, or press ▶️ to jump into the currently selected land.",
+          W / 2,
+          boxY + boxHeight - 26
+        );
+
+        ctx.restore();
       }
 
-      const glow = ctx.createRadialGradient(
-        player.x, player.y, player.radius * 0.2,
-        player.x, player.y, player.radius * 1.3
-      );
-      glow.addColorStop(0, '#5bd0ff');
-      glow.addColorStop(1, '#2044ff');
-      ctx.fillStyle = glow;
-      ctx.beginPath();
-      ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-      ctx.beginPath();
-      ctx.arc(player.x - 4, player.y - 4, player.radius * 0.5, 0, Math.PI * 2);
-      ctx.stroke();
-      
-      ctx.restore();
-    }
-
-    function drawAsteroids() {
-      if (!currentWorld) return;
-      for (let a of asteroids) {
+      function drawInstructions() {
+        if (gameState !== State.WAITING || currentLevel !== 1) return;
         ctx.save();
-        ctx.translate(a.x, a.y);
-        const size = a.size;
-
-        if (currentWorld === 'space') {
-          // Space: rotating rocks
-          ctx.rotate((a.x + a.y) * 0.002);
-
-          if (rockImgLoaded) {
-            ctx.drawImage(rockImg, -size / 2, -size / 2, size, size);
-          } else {
-            ctx.fillStyle = '#ff3b3b';
-            ctx.fillRect(-size / 2, -size / 2, size, size);
-          }
-        } else {
-          // Earth: birds with a little vertical wobble, no spin
-          const wobbleY = Math.sin(performance.now() * 0.008 + a.x * 0.01) * 4;
-          ctx.translate(0, wobbleY);
-
-          if (birdImgLoaded) {
-            ctx.drawImage(birdImg, -size / 2, -size / 2, size, size);
-          } else {
-            ctx.fillStyle = '#2d3df5';
-            ctx.beginPath();
-            ctx.arc(0, 0, size / 2, 0, Math.PI * 2);
-            ctx.fill();
-          }
-        }
-
-        ctx.restore();
-      }
-    }
-
-    function drawHusks() {
-      if (!currentWorld) return;
-      for (let h of husks) {
-        const size = h.size * 2;
-
-        if (currentWorld === 'space') {
-          if (asteroidImgLoaded) {
-            ctx.drawImage(
-              asteroidImg,
-              h.x - size / 2,
-              h.y - size / 2,
-              size,
-              size
-            );
-          } else {
-            ctx.fillStyle = '#9ea2b0';
-            ctx.strokeStyle = '#555a68';
-            ctx.lineWidth = 1.4;
-            const sides = 6;
-            const r = h.size;
-            ctx.beginPath();
-            for (let i = 0; i < sides; i++) {
-              const angle = (Math.PI * 2 / sides) * i + Math.PI / 6;
-              const x = h.x + Math.cos(angle) * r;
-              const y = h.y + Math.sin(angle) * r;
-              if (i === 0) ctx.moveTo(x, y);
-              else ctx.lineTo(x, y);
-            }
-            ctx.closePath();
-            ctx.fill();
-            ctx.stroke();
-            ctx.lineWidth = 1;
-          }
-        } else {
-          if (cactusImgLoaded) {
-            ctx.drawImage(
-              cactusImg,
-              h.x - size / 2,
-              h.y - size / 2,
-              size,
-              size
-            );
-          } else {
-            ctx.fillStyle = '#2eaa3b';
-            ctx.fillRect(h.x - h.size / 2, h.y - h.size, h.size, h.size * 2);
-          }
-        }
-      }
-    }
-
-    function drawProjectiles() {
-      if (!currentWorld) return;
-      ctx.fillStyle = '#f0d4ff';
-      for (let p of alienProjectiles) {
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-
-    function drawHearts() {
-      ctx.save();
-      ctx.font = '24px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      for (let h of hearts) {
-        ctx.fillText("❤️", h.x, h.y + 2);
-      }
-      ctx.restore();
-    }
-
-    function drawStars() {
-      ctx.save();
-      ctx.font = '24px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      for (let s of stars) {
-        ctx.fillText("⭐", s.x, s.y + 2);
-      }
-      ctx.restore();
-    }
-
-    function drawAlien() {
-      if (!alien || !currentWorld) return;
-      ctx.save();
-      ctx.globalAlpha = alienOpacity; 
-      ctx.translate(alien.x, alien.y);
-      const s = alien.size;
-      ctx.beginPath();
-      ctx.moveTo(0, -s * 0.6);
-      ctx.lineTo(-s * 0.7, s * 0.4);
-      ctx.lineTo(s * 0.7, s * 0.4);
-      ctx.closePath();
-
-      const grad = ctx.createLinearGradient(-s, -s, s, s);
-      grad.addColorStop(0, '#b45bff');
-      grad.addColorStop(1, '#7b1cff');
-      ctx.fillStyle = grad;
-      ctx.fill();
-
-      ctx.strokeStyle = '#f0d4ff';
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.arc(0, -s * 0.15, s * 0.18, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#22003a';
-      ctx.beginPath();
-      ctx.arc(0, -s * 0.15, s * 0.08, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.restore();
-      ctx.lineWidth = 1;
-    }
-
-    function drawLandingTarget() {
-      if (!alien || !currentWorld) return;
-      const isPreviewTime = (gameState === State.PLAYING && timer < 1.6);
-      const isFallingPhase = (gameState === State.POST_TIMER && !alienLanded);
-      if (!isPreviewTime && !isFallingPhase) return;
-
-      const indicatorWidth = alien.size * 2.5;
-      const indicatorHeight = 12;
-      const x = alien.x - indicatorWidth / 2;
-      const y = trampoline.y - trampoline.height - 6;
-      const alpha = 0.5 + Math.sin(performance.now() / 300) * 0.2;
-
-      ctx.save();
-      ctx.fillStyle = `rgba(180,255,180,${alpha})`;
-      ctx.fillRect(x, y, indicatorWidth, indicatorHeight);
-      ctx.restore();
-    }
-
-    function updateWinEffect(dt) {
-      if (!winEffect) return;
-      winEffect.time += dt;
-      const duration = 0.5;
-      if (winEffect.time <= duration) {
-        alienOpacity = 1.0 - (winEffect.time / duration); 
-      } else {
-        winEffect = null;
-        alienOpacity = 0.0;
-      }
-    }
-
-    function drawWinEffect() {
-      if (!winEffect) return;
-      const duration = 0.5;
-      const maxRadius = 150;
-      const opacity = 1.0 - (winEffect.time / duration);
-      const currentRadius = winEffect.radius + (maxRadius * winEffect.time * 2);
-      ctx.save();
-      ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
-      ctx.lineWidth = 6 * opacity;
-      ctx.beginPath();
-      ctx.arc(winEffect.x, winEffect.y, currentRadius, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.fillStyle = `rgba(255, 255, 255, ${opacity * 0.8})`;
-      ctx.beginPath();
-      ctx.arc(winEffect.x, winEffect.y, winEffect.radius * 2, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-    }
-
-    function updateDeathEffect(dt) {
-      if (!deathEffect) return;
-      deathEffect.time += dt;
-      if (deathEffect.time > 0.4) {
-        deathEffect = null;
-      }
-    }
-
-    function drawDeathEffect() {
-      if (!deathEffect) return;
-      const duration = 0.4;
-      const t = deathEffect.time / duration;
-      const opacity = 1.0 - t;
-      const maxRadius = 120;
-      const currentRadius = deathEffect.radius + maxRadius * t * 2;
-
-      ctx.save();
-      ctx.strokeStyle = `rgba(255, 120, 120, ${opacity})`;
-      ctx.lineWidth = 5 * opacity;
-      ctx.beginPath();
-      ctx.arc(deathEffect.x, deathEffect.y, currentRadius, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.fillStyle = `rgba(255, 200, 200, ${opacity * 0.8})`;
-      ctx.beginPath();
-      ctx.arc(deathEffect.x, deathEffect.y, deathEffect.radius * 1.4, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-    }
-
-    /* ==========================================================
-       UI OVERLAYS (HOME + INSTRUCTIONS + WIN)
-    ========================================================== */
-    function drawHomeScreen() {
-      ctx.save();
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-
-      // Dim background
-      ctx.fillStyle = 'rgba(0,0,0,0.45)';
-      ctx.fillRect(0, 0, W, H);
-
-      const boxWidth  = 520;
-      const boxHeight = 260;
-      const boxX = W / 2 - boxWidth / 2;
-      const boxY = H / 2 - boxHeight / 2 + 20;
-
-      // Panel
-      ctx.fillStyle = 'rgba(0,0,0,0.8)';
-      ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
-      ctx.strokeStyle = 'rgba(255,255,255,0.16)';
-      ctx.lineWidth = 1.5;
-      ctx.strokeRect(boxX + 0.5, boxY + 0.5, boxWidth - 1, boxHeight - 1);
-
-      ctx.fillStyle = '#ffe8a9';
-      ctx.font = '24px system-ui';
-      ctx.fillText('Select a Land', W/2, boxY + 32);
-
-      const cardWidth  = 220;
-      const cardHeight = 120;
-      const spaceX = boxX + 40;
-      const cardY  = boxY + 90;
-      const earthX = boxX + boxWidth - cardWidth - 40;
-
-      // Helper to draw card + overlay text
-      function drawLandCard(opts) {
-        const {
-          imgLoaded, img,
-          x, y, w, h,
-          borderColor,
-          title, subtitle,
-          locked
-        } = opts;
-
-        // Image or fallback
-        if (imgLoaded && img) {
-          ctx.drawImage(img, x, y, w, h);
-        } else {
-          ctx.fillStyle = 'rgba(10,15,40,0.9)';
-          ctx.fillRect(x, y, w, h);
-        }
-
-        // Border
-        ctx.strokeStyle = borderColor;
-        ctx.lineWidth = 1;
-        ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
-
-        // Text overlay (shadow for readability)
-        const titleY    = y + 14;
-        const subtitleY = y + h - 14;
-
-        ctx.font = '15px system-ui';
-        ctx.textAlign = 'center';
-
-        // drop shadow
-        ctx.shadowColor = 'rgba(0,0,0,0.8)';
-        ctx.shadowBlur = 6;
-        ctx.shadowOffsetX = 0;
-        ctx.shadowOffsetY = 2;
-
-        if (locked) {
-          // darken card and show lock text
-          ctx.fillStyle = 'rgba(0,0,0,0.45)';
-          ctx.fillRect(x, y, w, h);
-
-          ctx.fillStyle = '#ffaaaa';
-          ctx.fillText('Locked', x + w / 2, (y + y + h) / 2 - 8);
-
-          ctx.font = '12px system-ui';
-          ctx.fillStyle = '#ffd7d7';
-          ctx.fillText('Beat Space Land first', x + w / 2, (y + y + h) / 2 + 12);
-        } else {
-          // Title (world name) – top
-          ctx.font = '16px system-ui';
-          ctx.fillStyle = '#ffffff';
-          ctx.fillText(title, x + w / 2, titleY);
-
-          // Subtitle (levels) – bottom
-          ctx.font = '13px system-ui';
-          ctx.fillStyle = '#ffe8a9';
-          ctx.fillText(subtitle, x + w / 2, subtitleY);
-        }
-
-        // reset shadow
-        ctx.shadowColor = 'transparent';
-        ctx.shadowBlur = 0;
-        ctx.shadowOffsetX = 0;
-        ctx.shadowOffsetY = 0;
-      }
-
-      // Space Land card
-      drawLandCard({
-        imgLoaded: spaceTileLoaded,
-        img: spaceTileImg,
-        x: spaceX,
-        y: cardY,
-        w: cardWidth,
-        h: cardHeight,
-        borderColor: '#9dacff',
-        title: 'Space',
-        subtitle: 'Levels 1–10',
-        locked: false
-      });
-
-      // Earth Land card
-      drawLandCard({
-        imgLoaded: earthTileLoaded,
-        img: earthTileImg,
-        x: earthX,
-        y: cardY,
-        w: cardWidth,
-        h: cardHeight,
-        borderColor: earthUnlocked ? '#f7c94a' : 'rgba(255,255,255,0.2)',
-        title: 'Earth',
-        subtitle: 'Levels 11–20',
-        locked: !earthUnlocked
-      });
-
-      // Footer hint
-      ctx.font = '13px system-ui';
-      ctx.fillStyle = '#9dacff';
-      ctx.textAlign = 'center';
-      ctx.fillText(
-        'Click a land to begin, or press ▶️ to jump into Space Land.',
-        W/2,
-        boxY + boxHeight - 26
-      );
-
-      ctx.restore();
-    }
-
-    function drawInstructions() {
-      if (gameState !== State.WAITING || currentLevel !== 1) return;
-      ctx.save();
-      ctx.textAlign = 'center';
-      
-      const rules = [
-        "Survive for 10 seconds without hitting hazards or the UFO beam.",
-        "Use Left/Right arrows (← →) or touch buttons to move.",
-        "Each bounce gets higher — position carefully for the final landing."
-      ];
-      
-      const boxWidth = 520;
-      const boxHeight = 210;
-      const boxX = W / 2 - boxWidth / 2;
-      const boxY = H / 2 - boxHeight / 2;
-
-      ctx.fillStyle = 'rgba(0,0,0,0.65)';
-      ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
-      ctx.strokeStyle = 'rgba(255,255,255,0.18)';
-      ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
-
-      ctx.fillStyle = '#ffe8a9';
-      ctx.font = '22px system-ui';
-      ctx.fillText(`HOW TO PLAY – ${WORLDS[currentWorld].name}`, W / 2, boxY + 22);
-
-      ctx.textAlign = 'left';
-      ctx.font = '14px system-ui';
-      ctx.fillStyle = '#c5ccff';
-      rules.forEach((rule, index) => {
-        ctx.fillText(rule, boxX + 30, boxY + 60 + index * 24);
-      });
-
-      ctx.textAlign = 'center';
-      ctx.fillStyle = '#3ef19e';
-      ctx.font = '16px system-ui';
-      ctx.fillText("PRESS ↑ ARROW OR ▶️ TO START", W / 2, boxY + boxHeight - 32);
-
-      ctx.restore();
-    }
-
-    function drawFinalWinScreen() {
-      if (gameState !== State.WIN) return;
-      ctx.save();
-      ctx.textAlign = 'center';
-
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
-      ctx.fillRect(0, 0, W, H);
-
-      const boxWidth  = 520;
-      const boxHeight = 260;
-      const boxX = W / 2 - boxWidth / 2;
-      const boxY = H / 2 - boxHeight / 2;
-
-      const grd = ctx.createLinearGradient(boxX, boxY, boxX + boxWidth, boxY + boxHeight);
-      grd.addColorStop(0, 'rgba(60, 255, 180, 0.18)');
-      grd.addColorStop(1, 'rgba(140, 180, 255, 0.28)');
-      ctx.fillStyle = grd;
-      ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
-
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
-      ctx.fillRect(boxX + 6, boxY + 6, boxWidth - 12, boxHeight - 12);
-
-      ctx.strokeStyle = 'rgba(255,255,255,0.16)';
-      ctx.lineWidth = 1.5;
-      ctx.strokeRect(boxX + 6.5, boxY + 6.5, boxWidth - 13, boxHeight - 13);
-
-      ctx.fillStyle = '#3ef19e';
-      ctx.font = '26px system-ui';
-      ctx.fillText('ALL LANDS CLEARED!', W / 2, boxY + 38);
-
-      ctx.fillStyle = '#ffe8a9';
-      ctx.font = '16px system-ui';
-      ctx.fillText(`You survived Space & Earth.`, W / 2, boxY + 70);
-
-      ctx.font = '14px system-ui';
-      ctx.fillStyle = '#c5ccff';
-      ctx.fillText(`Lives remaining: ${lives}`, W / 2, boxY + 104);
-      ctx.fillText('Your bounce control is officially ridiculous.', W / 2, boxY + 128);
-
-      const feats = [
-        '• Dodged rocks, birds, beams, and projectiles',
-        '• Landed precisely on a moving UFO time after time',
-        '• Adapted to both low-gravity and desert chaos'
-      ];
-      ctx.textAlign = 'left';
-      feats.forEach((line, i) => {
-        ctx.fillText(line, boxX + 40, boxY + 160 + i * 18);
-      });
-
-      ctx.textAlign = 'center';
-      ctx.fillStyle = '#3ef19e';
-      ctx.font = '15px system-ui';
-      ctx.fillText('PRESS ↑ OR SPACE TO RETURN HOME', W / 2, boxY + boxHeight - 28);
-
-      ctx.restore();
-    }
-
-    function drawUIOverlay() {
-      ctx.save();
-      ctx.font = '14px system-ui';
-      ctx.textBaseline = 'top';
-
-      if (gameState === State.HOME) {
-        drawHomeScreen();
-        ctx.restore();
-        return;
-      }
-
-      if (gameState === State.WAITING && currentWorld) {
-        drawInstructions();
-        ctx.restore();
-        return;
-      }
-
-      let message = '';
-      let subMessage = '';
-
-      if (gameState === State.LEVEL_COMPLETE) {
-        if (currentWorld === 'space' && currentLevel === TOTAL_LEVELS_PER_WORLD) {
-          message = 'SPACE LAND CLEARED!';
-          subMessage = 'Earth Land unlocked. Press SPACE or ↑ to return Home.';
-        } else if (currentLevel < TOTAL_LEVELS_PER_WORLD) {
-          message = `LEVEL ${currentLevel} COMPLETE!`;
-          subMessage = `Press SPACE or ↑ for Level ${currentLevel + 1}.`;
-        } else {
-          message = `WORLD CLEARED!`;
-          subMessage = 'Press SPACE or ↑ to continue.';
-        }
-      } else if (gameState === State.GAME_OVER) {
-        message = 'GAME OVER';
-        subMessage = 'Press SPACE or ↑ to return Home.';
-      } else if (gameState === State.WIN) {
-        drawFinalWinScreen();
-        ctx.restore();
-        return;
-      }
-
-      if (message) {
-        ctx.textAlign = 'center';
-        const boxWidth = 420;
-        const boxHeight = subMessage ? 80 : 54;
+        ctx.textAlign = "center";
+
+        const rules = [
+          "Survive for 10 seconds without hitting hazards or the UFO beam.",
+          "Use Left/Right arrows (← →) or touch buttons to move.",
+          "Each bounce gets higher — position carefully for the final landing.",
+        ];
+
+        const boxWidth = 520;
+        const boxHeight = 210;
         const boxX = W / 2 - boxWidth / 2;
         const boxY = H / 2 - boxHeight / 2;
 
-        ctx.fillStyle = 'rgba(0,0,0,0.55)';
+        ctx.fillStyle = "rgba(0,0,0,0.65)";
+        ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+        ctx.strokeStyle = "rgba(255,255,255,0.18)";
+        ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
+
+        ctx.fillStyle = "#ffe8a9";
+        ctx.font = "22px system-ui";
+        ctx.fillText(
+          `HOW TO PLAY – ${WORLDS[currentWorld].name}`,
+          W / 2,
+          boxY + 22
+        );
+
+        ctx.textAlign = "left";
+        ctx.font = "14px system-ui";
+        ctx.fillStyle = "#c5ccff";
+        rules.forEach((rule, index) => {
+          ctx.fillText(rule, boxX + 30, boxY + 60 + index * 24);
+        });
+
+        ctx.textAlign = "center";
+        ctx.fillStyle = "#3ef19e";
+        ctx.font = "16px system-ui";
+        ctx.fillText(
+          "PRESS ↑ ARROW OR ▶️ TO START",
+          W / 2,
+          boxY + boxHeight - 32
+        );
+
+        ctx.restore();
+      }
+
+      function drawFinalWinScreen() {
+        if (gameState !== State.WIN) return;
+        ctx.save();
+        ctx.textAlign = "center";
+
+        ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
+        ctx.fillRect(0, 0, W, H);
+
+        const boxWidth = 520;
+        const boxHeight = 260;
+        const boxX = W / 2 - boxWidth / 2;
+        const boxY = H / 2 - boxHeight / 2;
+
+        const grd = ctx.createLinearGradient(boxX, boxY, boxX + boxWidth, boxY + boxHeight);
+        grd.addColorStop(0, "rgba(60, 255, 180, 0.18)");
+        grd.addColorStop(1, "rgba(140, 180, 255, 0.28)");
+        ctx.fillStyle = grd;
         ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
 
-        ctx.strokeStyle = 'rgba(255,255,255,0.12)';
-        ctx.strokeRect(boxX + 0.5, boxY + 0.5, boxWidth - 1, boxHeight - 1);
+        ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
+        ctx.fillRect(boxX + 6, boxY + 6, boxWidth - 12, boxHeight - 12);
 
-        ctx.fillStyle = '#ffe8a9';
-        ctx.font = '18px system-ui';
-        ctx.fillText(message, W / 2, boxY + 14);
+        ctx.strokeStyle = "rgba(255,255,255,0.16)";
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(boxX + 6.5, boxY + 6.5, boxWidth - 13, boxHeight - 13);
 
-        if (subMessage) {
-          ctx.fillStyle = '#c5ccff';
-          ctx.font = '13px system-ui';
-          ctx.fillText(subMessage, W / 2, boxY + 40);
-        }
+        ctx.fillStyle = "#3ef19e";
+        ctx.font = "26px system-ui";
+        ctx.fillText("ALL LANDS CLEARED!", W / 2, boxY + 38);
+
+        ctx.fillStyle = "#ffe8a9";
+        ctx.font = "16px system-ui";
+        ctx.fillText("You survived Space, Earth, & Sea.", W / 2, boxY + 70);
+
+        ctx.font = "14px system-ui";
+        ctx.fillStyle = "#c5ccff";
+        ctx.fillText(`Lives remaining: ${lives}`, W / 2, boxY + 104);
+        ctx.fillText(
+          "Your bounce control is officially ridiculous.",
+          W / 2,
+          boxY + 128
+        );
+
+        const feats = [
+          "• Dodged rocks, birds, sharks, beams, and projectiles",
+          "• Landed precisely on a moving UFO time after time",
+          "• Adapted to low-gravity, desert chaos, and freezing waters",
+        ];
+        ctx.textAlign = "left";
+        feats.forEach((line, i) => {
+          ctx.fillText(line, boxX + 40, boxY + 160 + i * 18);
+        });
+
+        ctx.textAlign = "center";
+        ctx.fillStyle = "#3ef19e";
+        ctx.font = "15px system-ui";
+        ctx.fillText(
+          "PRESS ↑ OR SPACE TO RETURN HOME",
+          W / 2,
+          boxY + boxHeight - 28
+        );
+
+        ctx.restore();
       }
 
-      ctx.restore();
-    }
+      function drawUIOverlay() {
+        ctx.save();
+        ctx.font = "14px system-ui";
+        ctx.textBaseline = "top";
 
-    /* ==========================================================
-       INPUT: "START" (Space / Up / ▶️)
-    ========================================================== */
-    function triggerStart() {
-      if (gameState === State.HOME) {
-        // By default, start Space Land
-        if (!currentWorld) {
-          enterWorld('space');
+        if (gameState === State.HOME) {
+          drawHomeScreen();
+          ctx.restore();
+          return;
         }
-        return;
-      }
 
-      if (gameState === State.WAITING) {
-        startLevelPlay();
-      } else if (gameState === State.LEVEL_COMPLETE) {
-        if (currentWorld === 'space' && currentLevel === TOTAL_LEVELS_PER_WORLD) {
-          earthUnlocked = true;
-          gameState = State.HOME;
-          currentWorld = null;
-          updateHUD();
-        } else if (currentLevel < TOTAL_LEVELS_PER_WORLD) {
-          resetLevel(currentLevel + 1);
-        } else {
-          // world cleared but not final game (handled via WIN for Earth)
-          if (currentWorld === 'earth') {
-            gameState = State.WIN;
+        if (gameState === State.WAITING && currentWorld) {
+          drawInstructions();
+          ctx.restore();
+          return;
+        }
+
+        let message = "";
+        let subMessage = "";
+
+        if (gameState === State.LEVEL_COMPLETE) {
+          if (
+            currentWorld === "space" &&
+            currentLevel === TOTAL_LEVELS_PER_WORLD
+          ) {
+            message = "SPACE LAND CLEARED!";
+            subMessage =
+              "Earth Land unlocked. Press SPACE or ↑ to return Home.";
+          } else if (
+            currentWorld === "earth" &&
+            currentLevel === TOTAL_LEVELS_PER_WORLD
+          ) {
+            message = "EARTH LAND CLEARED!";
+            subMessage = "Sea Land unlocked. Press SPACE or ↑ to return Home.";
+          } else if (currentLevel < TOTAL_LEVELS_PER_WORLD) {
+            message = `LEVEL ${currentLevel} COMPLETE!`;
+            subMessage = `Press SPACE or ↑ for Level ${
+              currentLevel + 1
+            }.`;
           } else {
+            message = `WORLD CLEARED!`;
+            subMessage = "Press SPACE or ↑ to continue.";
+          }
+        } else if (gameState === State.GAME_OVER) {
+          message = "GAME OVER";
+          subMessage = "Press SPACE or ↑ to return Home.";
+        } else if (gameState === State.WIN) {
+          drawFinalWinScreen();
+          ctx.restore();
+          return;
+        }
+
+        if (message) {
+          ctx.textAlign = "center";
+          const boxWidth = 420;
+          const boxHeight = subMessage ? 80 : 54;
+          const boxX = W / 2 - boxWidth / 2;
+          const boxY = H / 2 - boxHeight / 2;
+
+          ctx.fillStyle = "rgba(0,0,0,0.55)";
+          ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+
+          ctx.strokeStyle = "rgba(255,255,255,0.12)";
+          ctx.strokeRect(boxX + 0.5, boxY + 0.5, boxWidth - 1, boxHeight - 1);
+
+          ctx.fillStyle = "#ffe8a9";
+          ctx.font = "18px system-ui";
+          ctx.fillText(message, W / 2, boxY + 14);
+
+          if (subMessage) {
+            ctx.fillStyle = "#c5ccff";
+            ctx.font = "13px system-ui";
+            ctx.fillText(subMessage, W / 2, boxY + 40);
+          }
+        }
+
+        ctx.restore();
+      }
+
+      /* ==========================================================
+         INPUT: "START" (Space / Up / ▶️)
+      ========================================================== */
+      function triggerStart() {
+        if (gameState === State.HOME) {
+          // By default, start Space Land
+          if (!currentWorld) {
+            enterWorld("space");
+          }
+          return;
+        }
+
+        if (gameState === State.WAITING) {
+          startLevelPlay();
+        } else if (gameState === State.LEVEL_COMPLETE) {
+          if (
+            currentWorld === "space" &&
+            currentLevel === TOTAL_LEVELS_PER_WORLD
+          ) {
+            earthUnlocked = true;
+            gameState = State.HOME;
+            currentWorld = null;
+            updateHUD();
+          } else if (
+            currentWorld === "earth" &&
+            currentLevel === TOTAL_LEVELS_PER_WORLD
+          ) {
+            seaUnlocked = true; // Unlock Sea Land
+            gameState = State.HOME;
+            currentWorld = null;
+            updateHUD();
+          } else if (
+            currentWorld === "sea" &&
+            currentLevel === TOTAL_LEVELS_PER_WORLD
+          ) {
+            gameState = State.WIN; // Final win state
+          } else if (currentLevel < TOTAL_LEVELS_PER_WORLD) {
+            resetLevel(currentLevel + 1);
+          } else {
+            // Should only happen if total levels per world changes, but fallback to home
             gameState = State.HOME;
             currentWorld = null;
           }
+        } else if (gameState === State.GAME_OVER) {
+          gameState = State.HOME;
+          currentWorld = null;
+        } else if (gameState === State.WIN) {
+          gameState = State.HOME;
+          currentWorld = null;
         }
-      } else if (gameState === State.GAME_OVER) {
-        gameState = State.HOME;
-        currentWorld = null;
-      } else if (gameState === State.WIN) {
-        gameState = State.HOME;
-        currentWorld = null;
-      }
-      updateStartButtonVisibility();
-    }
-
-    window.addEventListener('keydown', (e) => {
-      if (e.code === 'Space' || e.code === 'ArrowUp') {
-        triggerStart();
-      }
-    });
-
-    /* ==========================================================
-       HOME SCREEN CLICK HANDLING (world selection)
-    ========================================================== */
-    canvas.addEventListener('click', (e) => {
-      if (gameState !== State.HOME) return;
-      const rect = canvas.getBoundingClientRect();
-      const scaleX = W / rect.width;
-      const scaleY = H / rect.height;
-      const x = (e.clientX - rect.left) * scaleX;
-      const y = (e.clientY - rect.top) * scaleY;
-
-      const boxWidth  = 520;
-      const boxHeight = 260;
-      const boxX = W / 2 - boxWidth / 2;
-      const boxY = H / 2 - boxHeight / 2;
-
-      const cardWidth  = 220;
-      const cardHeight = 120;
-      const spaceX = boxX + 40;
-      const cardY  = boxY + 90;
-      const earthX = boxX + boxWidth - cardWidth - 40;
-
-      function inRect(px, py, rx, ry, rw, rh) {
-        return px >= rx && px <= rx + rw && py >= ry && py <= ry + rh;
+        updateStartButtonVisibility();
       }
 
-      if (inRect(x, y, spaceX, cardY, cardWidth, cardHeight)) {
-        enterWorld('space');
-      } else if (inRect(x, y, earthX, cardY, cardWidth, cardHeight)) {
-        if (earthUnlocked) {
-          enterWorld('earth');
-        } else {
-          setStatus('Earth Land is locked. Beat Space Land first!');
+      window.addEventListener("keydown", (e) => {
+        if (e.code === "Space" || e.code === "ArrowUp") {
+          triggerStart();
         }
-      }
-    });
+      });
 
-    /* ==========================================================
-       GAME LOOP
-    ========================================================== */
-    function gameLoop(timestamp) {
-      if (!lastTimestamp) {
+      /* ==========================================================
+         HOME SCREEN CLICK HANDLING (world selection)
+      ========================================================== */
+      canvas.addEventListener("click", (e) => {
+        if (gameState !== State.HOME) return;
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = W / rect.width;
+        const scaleY = H / rect.height;
+        const x = (e.clientX - rect.left) * scaleX;
+        const y = (e.clientY - rect.top) * scaleY;
+
+        const boxWidth = 700; // Adjusted for three cards
+        const boxHeight = 280;
+        const boxX = W / 2 - boxWidth / 2;
+        const boxY = H / 2 - boxHeight / 2;
+
+        const cardWidth = 200; // Adjusted
+        const cardHeight = 120;
+        const cardY = boxY + 90;
+        const cardGap = 20;
+
+        // Recalculate positions based on the new 3-card layout
+        const totalCardsWidth = cardWidth * 3 + cardGap * 2;
+        const startX = W / 2 - totalCardsWidth / 2;
+        const spaceX = startX;
+        const earthX = startX + cardWidth + cardGap;
+        const seaX = startX + cardWidth * 2 + cardGap * 2; // NEW POSITION
+
+        function inRect(px, py, rx, ry, rw, rh) {
+          return (
+            px >= rx && px <= rx + rw && py >= ry && py <= ry + rh
+          );
+        }
+
+        if (inRect(x, y, spaceX, cardY, cardWidth, cardHeight)) {
+          enterWorld("space");
+        } else if (inRect(x, y, earthX, cardY, cardWidth, cardHeight)) {
+          if (earthUnlocked) {
+            enterWorld("earth");
+          } else {
+            setStatus("Earth Land is locked. Beat Space Land first!");
+          }
+        } else if (inRect(x, y, seaX, cardY, cardWidth, cardHeight)) {
+          if (seaUnlocked) {
+            enterWorld("sea");
+          } else {
+            setStatus("Sea Land is locked. Beat Earth Land first!");
+          }
+        }
+      });
+
+      /* ==========================================================
+         GAME LOOP
+      ========================================================== */
+      function gameLoop(timestamp) {
+        if (!lastTimestamp) {
+          lastTimestamp = timestamp;
+          requestAnimationFrame(gameLoop);
+          return;
+        }
+        const dt = Math.min((timestamp - lastTimestamp) / 1000, 0.033);
         lastTimestamp = timestamp;
+
+        if (gameState === State.PLAYING) {
+          handleTimerAndMusic(dt);
+          spawnAsteroid(dt);
+          updateAsteroids(dt);
+          updateTrampoline(dt);
+          updatePlayer(dt);
+          updateAlien(dt);
+          handleAlienThreatAudio();
+          updateProjectiles(dt);
+          spawnHeart(dt);
+          updateHearts(dt);
+          spawnStar(dt);
+          updateStars(dt);
+        } else if (gameState === State.POST_TIMER) {
+          handleTimerAndMusic(dt);
+          updateAlien(dt);
+          updateTrampoline(dt);
+          updatePlayer(dt);
+        } else if (
+          gameState === State.WAITING ||
+          gameState === State.LEVEL_COMPLETE ||
+          gameState === State.GAME_OVER ||
+          gameState === State.WIN
+        ) {
+          updateTrampoline(dt);
+          updateAlien(dt);
+        }
+
+        updateWinEffect(dt);
+        updateDeathEffect(dt);
+
+        drawBackground();
+        if (currentWorld) {
+          drawSuctionBeam();
+          drawHusks();
+          drawAsteroids();
+          drawProjectiles();
+          drawHearts();
+          drawStars();
+          drawTrampoline();
+          drawLandingTarget();
+          drawAlien();
+          drawPlayer();
+        }
+        drawWinEffect();
+        drawDeathEffect();
+        drawUIOverlay();
+
         requestAnimationFrame(gameLoop);
-        return;
-      }
-      const dt = Math.min((timestamp - lastTimestamp) / 1000, 0.033);
-      lastTimestamp = timestamp;
-
-      if (gameState === State.PLAYING) {
-        handleTimerAndMusic(dt);
-        spawnAsteroid(dt);
-        updateAsteroids(dt);
-        updateTrampoline(dt);
-        updatePlayer(dt);
-        updateAlien(dt);
-        handleAlienThreatAudio();
-        updateProjectiles(dt);
-        spawnHeart(dt);
-        updateHearts(dt);
-        spawnStar(dt);
-        updateStars(dt);
-
-      } else if (gameState === State.POST_TIMER) {
-        handleTimerAndMusic(dt);
-        updateAlien(dt);
-        updateTrampoline(dt);
-        updatePlayer(dt);
-
-      } else if (
-        gameState === State.WAITING ||
-        gameState === State.LEVEL_COMPLETE ||
-        gameState === State.GAME_OVER ||
-        gameState === State.WIN
-      ) {
-        updateTrampoline(dt);
-        updateAlien(dt);
       }
 
-      updateWinEffect(dt);
-      updateDeathEffect(dt);
-
-      drawBackground();
-      if (currentWorld) {
-        drawSuctionBeam();
-        drawHusks();
-        drawAsteroids();
-        drawProjectiles();
-        drawHearts();
-        drawStars();
-        drawTrampoline();
-        drawLandingTarget();
-        drawAlien();
-        drawPlayer();
-      }
-      drawWinEffect();
-      drawDeathEffect();
-      drawUIOverlay();
-
+      updateStartButtonVisibility();
+      updateHUD();
       requestAnimationFrame(gameLoop);
-    }
-
-    updateStartButtonVisibility();
-    updateHUD();
-    requestAnimationFrame(gameLoop);
-  })();
+    })();
   </script>
 </body>
 </html>
