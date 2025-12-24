@@ -4,21 +4,18 @@
   <meta charset="UTF-8" />
   <title>10-Second Bounce Challenge</title>
 
-  <!-- Favicon -->
   <link rel="icon" href="data:image/svg+xml, <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🔵</text></svg>">
 
 
-  <!-- Social preview -->
-  <meta property="og:image" content="https://github.com/moodynova703/moodynova703.github.io/blob/main/home.png?raw=true" />
-  <meta name="twitter:image" content="https://github.com/moodynova703/moodynova703.github.io/blob/main/home.png?raw=true" />
+  <meta property="og:image" content="home.png" />
+  <meta name="twitter:image" content="home.png" />
 
-  <!-- Apple icon -->
-  <link rel="apple-touch-icon" href="https://github.com/moodynova703/moodynova703.github.io/blob/main/home.png?raw=true" />
+  <link rel="apple-touch-icon" href="home.png" />
 
   <title>10-Second Bounce Challenge</title>
   <style>
     /* ----------------------------------------------------------
-       GLOBAL RESET & BODY
+        GLOBAL RESET & BODY
     ---------------------------------------------------------- */
     html,
     body {
@@ -31,7 +28,7 @@
     }
 
     /* ----------------------------------------------------------
-       MAIN CONTAINER (topBar + canvasWrapper)
+        MAIN CONTAINER (topBar + canvasWrapper)
     ---------------------------------------------------------- */
     #gameContainer {
       display: flex;
@@ -42,7 +39,7 @@
     }
 
     /* ----------------------------------------------------------
-       TOP HUD BAR
+        TOP HUD BAR
     ---------------------------------------------------------- */
     #topBar {
       display: flex;
@@ -85,7 +82,7 @@
     }
 
     /* ----------------------------------------------------------
-       CANVAS WRAPPER (scaling container)
+        CANVAS WRAPPER (scaling container)
     ---------------------------------------------------------- */
     #canvasWrapper {
       position: relative;
@@ -109,7 +106,7 @@
     }
 
     /* ----------------------------------------------------------
-       GAME CANVAS
+        GAME CANVAS
     ---------------------------------------------------------- */
     #gameCanvas {
       aspect-ratio: 4 / 3;
@@ -121,7 +118,7 @@
     }
 
     /* ----------------------------------------------------------
-       TOUCH CONTROLS (overlay)
+        TOUCH CONTROLS (overlay)
     ---------------------------------------------------------- */
     #touchControls {
       position: absolute;
@@ -218,7 +215,7 @@
       const H = canvas.height;
 
       /* ==========================================================
-         SPRITES
+          SPRITES
       ========================================================== */
       const rockImg = new Image(); // space moving hazard
       const asteroidImg = new Image(); // space static
@@ -230,7 +227,9 @@
       const sharkImg = new Image(); // sea moving hazard
       const icebergImg = new Image(); // sea static
       const seaTileImg = new Image();
+      const alienImg = new Image();
 
+      let alienImgLoaded = false;
       let spaceTileLoaded = false;
       let earthTileLoaded = false;
       let homeBgLoaded = false;
@@ -252,6 +251,7 @@
       sharkImg.src = "shark.png";
       icebergImg.src = "iceberg.png";
       seaTileImg.src = "sea.png";
+      alienImg.src = "alien.png";
 
       spaceTileImg.onload = () => {
         spaceTileLoaded = true;
@@ -283,9 +283,12 @@
       seaTileImg.onload = () => {
         seaTileLoaded = true;
       };
+      alienImg.onload = () => {
+        alienImgLoaded = true;
+      };
 
       /* ==========================================================
-         PHYSICS & CONSTANTS
+          PHYSICS & CONSTANTS
       ========================================================== */
       const GRAVITY = 1000;
       const AX = 400;
@@ -318,7 +321,7 @@ function getWaterSurfaceY() {
       const TOTAL_LEVELS_PER_WORLD = 10;
 
       /* ==========================================================
-         WORLDS & LEVEL CONFIGS
+          WORLDS & LEVEL CONFIGS
       ========================================================== */
 
       const spaceLevels = [
@@ -660,8 +663,8 @@ function getWaterSurfaceY() {
         {
           theme: "Kraken's Lair",
           levelBounces: 10,
-          trampWidthRatio: 0.3,
-          trampSpeed: 160,
+          trampWidthRatio: 0.45,
+          trampSpeed: 150,
           husks: [
             { x: W * 0.25, y: H - 90, size: 35 },
             { x: W * 0.75, y: H - 90, size: 35 },
@@ -674,10 +677,10 @@ function getWaterSurfaceY() {
         {
           theme: "Titanic Descent",
           levelBounces: 11,
-          trampWidthRatio: 0.25,
-          trampSpeed: 170,
-          husks: [{ x: W * 0.5, y: H - 100, size: 30 }],
-          lambdaMultiplier: 5.5,
+          trampWidthRatio: 0.4,
+          trampSpeed: 175,
+          husks: [{ x: W * 0.15, y: H - 100, size: 30 }],
+          lambdaMultiplier: 5.0,
           dirMix: { H: 0.4, D: 0.5, V: 0.1 },
           alienSpeedTop: 200,
           projectileRate: 0.5,
@@ -685,10 +688,10 @@ function getWaterSurfaceY() {
         {
           theme: "Final Gauntlet",
           levelBounces: 12,
-          trampWidthRatio: 0.2,
-          trampSpeed: 180,
-          husks: [{ x: W * 0.5, y: H - 120, size: 50 }],
-          lambdaMultiplier: 6.0,
+          trampWidthRatio: 0.4,
+          trampSpeed: 210,
+          husks: [{ x: W * 0.8, y: H - 120, size: 50 }],
+          lambdaMultiplier: 5.0,
           dirMix: { H: 0.35, D: 0.55, V: 0.1 },
           alienSpeedTop: 220,
           projectileRate: 0.6,
@@ -720,7 +723,7 @@ function getWaterSurfaceY() {
       };
 
       /* ==========================================================
-         INPUT
+          INPUT
       ========================================================== */
       const keys = { left: false, right: false, up: false };
 
@@ -836,14 +839,54 @@ function getWaterSurfaceY() {
       }
 
       /* ==========================================================
-         AUDIO
+          AUDIO
       ========================================================== */
       let audioCtx = null;
+      const homeMusic = new Audio("opening.m4a");
+      const gameplayMusic = new Audio("gameplay.m4a");
+      
+      homeMusic.volume = 0.4;
+      gameplayMusic.volume = 0.1;
+
+      homeMusic.loop = true;
+      gameplayMusic.loop = true;
+
       function ensureAudio() {
         if (!audioCtx) {
           audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         }
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
       }
+
+      function updateMusicState() {
+        ensureAudio();
+        if (gameState === State.HOME || gameState === State.WAITING) {
+            // Keep home music playing during the instruction/waiting screen
+            gameplayMusic.pause();
+            gameplayMusic.currentTime = 0; // Reset gameplay music to start
+            homeMusic.play().catch(() => {});
+        } else if (gameState === State.PLAYING || gameState === State.POST_TIMER) {
+            // Only switch to gameplay music once the action starts
+            homeMusic.pause();
+            gameplayMusic.play().catch(() => {});
+        } else {
+            homeMusic.pause();
+            gameplayMusic.pause();
+        }
+      }
+
+      // NEW: Listener to unlock audio on the very first click/touch
+      const unlockAudio = () => {
+        updateMusicState();
+        document.removeEventListener('click', unlockAudio);
+        document.removeEventListener('touchstart', unlockAudio);
+        document.removeEventListener('keydown', unlockAudio);
+      };
+      document.addEventListener('click', unlockAudio);
+      document.addEventListener('touchstart', unlockAudio);
+      document.addEventListener('keydown', unlockAudio);
 
       function playBeep(freq, duration, type = "sine", gainValue = 0.08) {
         try {
@@ -869,7 +912,7 @@ function getWaterSurfaceY() {
       function playLaunchSound(bounceCount) {
         const baseFreq = 300;
         const freq = baseFreq + bounceCount * 30;
-        playBeep(freq, 0.12, "sawtooth", 0.12);
+        playBeep(freq, 0.09, "sawtooth", 0.09);
       }
 
       function playDeathSound() {
@@ -966,7 +1009,7 @@ function getWaterSurfaceY() {
       let lastMusicTick = 0;
 
       /* ==========================================================
-         ENTITIES & GAME STATE
+          ENTITIES & GAME STATE
       ========================================================== */
       const player = {
         x: W * 0.5,
@@ -1041,7 +1084,7 @@ function getWaterSurfaceY() {
       }
 
       /* ==========================================================
-         WORLD / LEVEL MANAGEMENT
+          WORLD / LEVEL MANAGEMENT
       ========================================================== */
       function enterWorld(worldId) {
         currentWorld = worldId;
@@ -1049,6 +1092,7 @@ function getWaterSurfaceY() {
         currentLevel = 1;
         lives = INITIAL_LIVES;
         resetLevel(1);
+        updateMusicState();
       }
 
       function resetPlayerToTrampolineCenter() {
@@ -1130,6 +1174,10 @@ function getWaterSurfaceY() {
           player.vy = -vup;
           playLaunchSound(bounceCount);
           gameState = State.PLAYING;
+          
+          // Trigger the music switch here!
+          updateMusicState(); 
+          
           setStatus(
             `LEVEL ${currentLevel} START! ` +
               `Stay alive for 10 seconds. Avoid hazards and the alien suction beam.`
@@ -1143,7 +1191,7 @@ function getWaterSurfaceY() {
       }
 
       /* ==========================================================
-         POWERUPS
+          POWERUPS
       ========================================================== */
       function spawnHeart(dt) {
         if (!currentWorld) return;
@@ -1195,7 +1243,7 @@ function getWaterSurfaceY() {
       }
 
       /* ==========================================================
-         PROJECTILES
+          PROJECTILES
       ========================================================== */
       function fireProjectile(dt) {
         if (!currentWorld) return;
@@ -1236,7 +1284,7 @@ function getWaterSurfaceY() {
       }
 
       /* ==========================================================
-         ASTEROIDS / BIRDS / SHARKS & HUSKS / CACTI / ICEBERGS
+          ASTEROIDS / BIRDS / SHARKS & HUSKS / CACTI / ICEBERGS
       ========================================================== */
  function spawnAsteroid(dt) {
   if (!currentWorld) return;
@@ -1312,7 +1360,7 @@ function getWaterSurfaceY() {
       }
 
       /* ==========================================================
-         TRAMPOLINE
+          TRAMPOLINE
       ========================================================== */
       function updateTrampoline(dt) {
         if (!currentWorld) return;
@@ -1363,7 +1411,7 @@ function getWaterSurfaceY() {
       }
 
       /* ==========================================================
-         COLLISION HELPERS
+          COLLISION HELPERS
       ========================================================== */
       function circleRectCollision(cx, cy, cr, rx, ry, rw, rh) {
         const closestX = Math.max(rx, Math.min(cx, rx + rw));
@@ -1451,7 +1499,7 @@ function checkHuskCollision() {
       const baseY = getIcebergBaseY(h);   // same bobbing as draw
 
       const width  = h.size * 3.0;
-      const height = h.size * 4.0;
+      const height = h.size * 5.0;
       const rx = h.x - width / 2;
       const ry = baseY - height;
 
@@ -1532,7 +1580,7 @@ function checkHuskCollision() {
       }
 
       /* ==========================================================
-         ALIEN & LANDING
+          ALIEN & LANDING
       ========================================================== */
       function createAlienForPostTimer() {
         const size = alienConfig.size;
@@ -1664,6 +1712,7 @@ function checkHuskCollision() {
         alienLanded = false;
         isInvincible = false;
         updateHUD();
+        updateMusicState();
         updateStartButtonVisibility();
       }
 
@@ -1676,6 +1725,7 @@ function checkHuskCollision() {
           time: 0,
         };
         updateStartButtonVisibility();
+        updateMusicState();
         alienOpacity = 1.0;
 
         if (gameState === State.WIN) {
@@ -1704,7 +1754,7 @@ function checkHuskCollision() {
       }
 
       /* ==========================================================
-         TIMER & MUSIC
+          TIMER & MUSIC
       ========================================================== */
       function handleTimerAndMusic(dt) {
         if (gameState === State.PLAYING) {
@@ -1756,9 +1806,16 @@ function checkHuskCollision() {
       }
 
       /* ==========================================================
-         PLAYER UPDATE (with post-timer landing rules)
+          PLAYER UPDATE (with post-timer landing rules)
       ========================================================== */
       function updatePlayer(dt) {
+        // STOP PHYSICS IF LEVEL COMPLETE
+        if (gameState === State.LEVEL_COMPLETE || gameState === State.WIN) {
+            player.vx = 0;
+            player.vy = 0;
+            return;
+        }
+
         const prevY = player.y;
 
         if (keys.left) player.vx -= AX * dt;
@@ -1892,7 +1949,7 @@ function checkHuskCollision() {
       }
 
       /* ==========================================================
-         DRAWING
+          DRAWING
       ========================================================== */
       function drawBackground() {
         ctx.save();
@@ -2035,7 +2092,8 @@ function checkHuskCollision() {
       }
 
       function drawPlayer() {
-        if (winEffect || deathEffect || !currentWorld) return;
+        // HIDE BALL ON WIN
+        if (winEffect || deathEffect || !currentWorld || gameState === State.LEVEL_COMPLETE || gameState === State.WIN) return;
 
         ctx.save();
 
@@ -2096,9 +2154,7 @@ function checkHuskCollision() {
           const size = a.size;
 
           if (currentWorld === "space") {
-            // Space: rotating rocks
             ctx.rotate((a.x + a.y) * 0.002);
-
             if (rockImgLoaded) {
               ctx.drawImage(rockImg, -size / 2, -size / 2, size, size);
             } else {
@@ -2106,12 +2162,18 @@ function checkHuskCollision() {
               ctx.fillRect(-size / 2, -size / 2, size, size);
             }
           } else if (currentWorld === "earth") {
-            // Earth: birds with a little vertical wobble, no spin
-            const wobbleY =
-              Math.sin(performance.now() * 0.008 + a.x * 0.01) * 4;
+            // Earth: Birds
+            const wobbleY = Math.sin(performance.now() * 0.008 + a.x * 0.01) * 4;
             ctx.translate(0, wobbleY);
 
+            // FLIP LOGIC HERE
+            // If vx is negative, the bird is moving left, so we flip the image
+            if (a.vx > 0) {
+              ctx.scale(-1, 1);
+            }
+
             if (birdImgLoaded) {
+              // We still draw at -size/2 because the entire coordinate system flipped
               ctx.drawImage(birdImg, -size / 2, -size / 2, size, size);
             } else {
               ctx.fillStyle = "#2d3df5";
@@ -2120,19 +2182,18 @@ function checkHuskCollision() {
               ctx.fill();
             }
           } else if (currentWorld === "sea") {
-            // Sea: Sharks - flipped based on velocity
-            const scaleX = a.vx > 0 ? 1 : -1; // Flip the image if moving left
-            const size = a.size * 1.8;
-
+            // Sea: Sharks (Already has flip logic in your original code)
+            const scaleX = a.vx > 0 ? 1 : -1;
+            const sSize = a.size * 1.8;
             ctx.scale(scaleX, 1);
             if (sharkImgLoaded) {
-              ctx.drawImage(sharkImg, -size / 2, -size / 2, size, size);
+              ctx.drawImage(sharkImg, -sSize / 2, -sSize / 2, sSize, sSize);
             } else {
               ctx.fillStyle = "#f56342";
               ctx.beginPath();
-              ctx.moveTo(0, -size / 2);
-              ctx.lineTo(size / 2, size / 2);
-              ctx.lineTo(-size / 2, size / 2);
+              ctx.moveTo(0, -sSize / 2);
+              ctx.lineTo(sSize / 2, sSize / 2);
+              ctx.lineTo(-sSize / 2, sSize / 2);
               ctx.closePath();
               ctx.fill();
             }
@@ -2223,6 +2284,9 @@ function checkHuskCollision() {
           ctx.beginPath();
           ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
           ctx.fill();
+          ctx.strokeStyle = "#000000";
+          ctx.lineWidth = 2; // Thickness of the border
+          ctx.stroke();
         }
       }
 
@@ -2250,38 +2314,48 @@ function checkHuskCollision() {
 
       function drawAlien() {
         if (!alien || !currentWorld) return;
+
         ctx.save();
         ctx.globalAlpha = alienOpacity;
         ctx.translate(alien.x, alien.y);
-        const s = alien.size;
-        ctx.beginPath();
-        ctx.moveTo(0, -s * 0.6);
-        ctx.lineTo(-s * 0.7, s * 0.4);
-        ctx.lineTo(s * 0.7, s * 0.4);
-        ctx.closePath();
 
-        const grad = ctx.createLinearGradient(-s, -s, s, s);
-        grad.addColorStop(0, "#b45bff");
-        grad.addColorStop(1, "#7b1cff");
-        ctx.fillStyle = grad;
-        ctx.fill();
+        const size = alien.size * 2.2; // scale factor – tweak freely
 
-        ctx.strokeStyle = "#f0d4ff";
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
+        if (alienImgLoaded) {
+          ctx.drawImage(
+            alienImg,
+            -size / 2,
+            -size / 2,
+            size,
+            size
+          );
+        } else {
+          // Fallback: old triangle UFO
+          ctx.beginPath();
+          ctx.moveTo(0, -alien.size * 0.6);
+          ctx.lineTo(-alien.size * 0.7, alien.size * 0.4);
+          ctx.lineTo(alien.size * 0.7, alien.size * 0.4);
+          ctx.closePath();
 
-        ctx.fillStyle = "#ffffff";
-        ctx.beginPath();
-        ctx.arc(0, -s * 0.15, s * 0.18, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = "#22003a";
-        ctx.beginPath();
-        ctx.arc(0, -s * 0.15, s * 0.08, 0, Math.PI * 2);
-        ctx.fill();
+          const grad = ctx.createLinearGradient(
+            -alien.size,
+            -alien.size,
+            alien.size,
+            alien.size
+          );
+          grad.addColorStop(0, "#b45bff");
+          grad.addColorStop(1, "#7b1cff");
+          ctx.fillStyle = grad;
+          ctx.fill();
+
+          ctx.strokeStyle = "#f0d4ff";
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+        }
 
         ctx.restore();
-        ctx.lineWidth = 1;
       }
+
 
       function drawLandingTarget() {
         if (!alien || !currentWorld) return;
@@ -2383,7 +2457,7 @@ function checkHuskCollision() {
 
 
       /* ==========================================================
-         UI OVERLAYS (HOME + INSTRUCTIONS + WIN)
+          UI OVERLAYS (HOME + INSTRUCTIONS + WIN)
       ========================================================== */
       function drawHomeScreen() {
         ctx.save();
@@ -2745,7 +2819,7 @@ function checkHuskCollision() {
       }
 
       /* ==========================================================
-         INPUT: "START" (Space / Up / ▶️)
+          INPUT: "START" (Space / Up / ▶️)
       ========================================================== */
       function triggerStart() {
         if (gameState === State.HOME) {
@@ -2767,6 +2841,7 @@ function checkHuskCollision() {
             gameState = State.HOME;
             currentWorld = null;
             updateHUD();
+            updateMusicState();
           } else if (
             currentWorld === "earth" &&
             currentLevel === TOTAL_LEVELS_PER_WORLD
@@ -2775,6 +2850,7 @@ function checkHuskCollision() {
             gameState = State.HOME;
             currentWorld = null;
             updateHUD();
+            updateMusicState();
           } else if (
             currentWorld === "sea" &&
             currentLevel === TOTAL_LEVELS_PER_WORLD
@@ -2786,13 +2862,16 @@ function checkHuskCollision() {
             // Should only happen if total levels per world changes, but fallback to home
             gameState = State.HOME;
             currentWorld = null;
+            updateMusicState();
           }
         } else if (gameState === State.GAME_OVER) {
           gameState = State.HOME;
           currentWorld = null;
+          updateMusicState();
         } else if (gameState === State.WIN) {
           gameState = State.HOME;
           currentWorld = null;
+          updateMusicState();
         }
         updateStartButtonVisibility();
       }
@@ -2801,10 +2880,23 @@ function checkHuskCollision() {
         if (e.code === "Space" || e.code === "ArrowUp") {
           triggerStart();
         }
+        if (currentWorld && e.key >= "1" && e.key <= "9") {
+        resetLevel(parseInt(e.key));
+        // If jumping from home, ensure music starts
+        if (gameState === State.HOME) {
+            gameState = State.WAITING;
+            updateMusicState();
+        }
+    }
+    
+    // Press '0' for level 10
+    if (currentWorld && e.key === "0") {
+        resetLevel(10);
+    }
       });
 
       /* ==========================================================
-         HOME SCREEN CLICK HANDLING (world selection)
+          HOME SCREEN CLICK HANDLING (world selection)
       ========================================================== */
       canvas.addEventListener("click", (e) => {
         if (gameState !== State.HOME) return;
@@ -2855,7 +2947,7 @@ function checkHuskCollision() {
       });
 
       /* ==========================================================
-         GAME LOOP
+          GAME LOOP
       ========================================================== */
       function gameLoop(timestamp) {
         if (!lastTimestamp) {
@@ -2919,6 +3011,7 @@ function checkHuskCollision() {
 
       updateStartButtonVisibility();
       updateHUD();
+      updateMusicState();
       requestAnimationFrame(gameLoop);
     })();
   </script>
