@@ -228,6 +228,9 @@
       const icebergImg = new Image(); // sea static
       const seaTileImg = new Image();
       const alienImg = new Image();
+      const forestTileImg = new Image();
+      const treeImg = new Image();
+      const windImg = new Image();
 
       let alienImgLoaded = false;
       let spaceTileLoaded = false;
@@ -240,6 +243,9 @@
       let sharkImgLoaded = false;
       let icebergImgLoaded = false;
       let seaTileLoaded = false;
+      let forestTileLoaded = false;
+      let treeImgLoaded = false;
+      let windImgLoaded = false;
 
       spaceTileImg.src = "space.png";
       earthTileImg.src = "earth.png";
@@ -252,6 +258,9 @@
       icebergImg.src = "iceberg.png";
       seaTileImg.src = "sea.png";
       alienImg.src = "alien.png";
+      forestTileImg.src = "forest.png";
+      treeImg.src = "tree.png";
+      windImg.src = "wind.png";
 
       spaceTileImg.onload = () => {
         spaceTileLoaded = true;
@@ -286,6 +295,9 @@
       alienImg.onload = () => {
         alienImgLoaded = true;
       };
+      forestTileImg.onload = () => forestTileLoaded = true;
+      treeImg.onload = () => treeImgLoaded = true;
+      windImg.onload = () => windImgLoaded = true;
 
       /* ==========================================================
           PHYSICS & CONSTANTS
@@ -300,11 +312,17 @@
 
       const CEILING_Y = 10;
       // Sea water surface is slightly above the trampoline
-const WATER_SURFACE_OFFSET = 20; // tweak to taste
-const ICEBERG_Y_OFFSET = 70;
-const ICEBERG_BOB_AMPLITUDE = 4;   // how far the iceberg moves (pixels)
-const ICEBERG_BOB_SPEED = 1.3;     // how fast it bobs
+      const WATER_SURFACE_OFFSET = 20; // tweak to taste
+      const ICEBERG_Y_OFFSET = 70;
+      const ICEBERG_BOB_AMPLITUDE = 4;   // how far the iceberg moves (pixels)
+      const ICEBERG_BOB_SPEED = 1.3;     // how fast it bobs
 
+      const WIND_MIN_FORCE = 180;
+      const WIND_MAX_FORCE = 420;
+      const WIND_WIDTH_MIN = 120;
+      const WIND_WIDTH_MAX = 240;
+      const WIND_LIFETIME_MIN = 2.5;
+      const WIND_LIFETIME_MAX = 4.5;
 
 function getWaterSurfaceY() {
   return trampoline.y - WATER_SURFACE_OFFSET;
@@ -697,30 +715,58 @@ function getWaterSurfaceY() {
           projectileRate: 0.6,
         },
       ];
+      /* Forest Land – precision & control focused */
+/* Forest Land – precision & control focused */
+/* Forest Land – Uniform Height & High Density Obstacles */
+const forestLevels = [
+  { theme: "Forest Edge", levelBounces: 6, trampWidthRatio: 1.0, trampSpeed: 0, 
+    husks: [{ x: W * 0.1, y: 0, size: 40 }, { x: W * 0.9, y: 0, size: 40 }], 
+    lambdaMultiplier: 1.8, dirMix: { H: 0.7, D: 0.25, V: 0.05 }, alienSpeedTop: 40, projectileRate: 0.05, windForce: 350 },
+
+  { theme: "Low Canopy", levelBounces: 7, trampWidthRatio: 0.9, trampSpeed: 40, 
+    husks: [{ x: W * 0.2, y: 0, size: 40 }, { x: W * 0.45, y: 0, size: 40 }, { x: W * 0.8, y: 0, size: 40 }], 
+    lambdaMultiplier: 2.1, dirMix: { H: 0.65, D: 0.3, V: 0.05 }, alienSpeedTop: 60, projectileRate: 0.1, windForce: 400 },
+
+  { theme: "The Triplets", levelBounces: 7, trampWidthRatio: 0.85, trampSpeed: 60, 
+    husks: [{ x: W * 0.25, y: 0, size: 40 }, { x: W * 0.29, y: 0, size: 40 }, { x: W * 0.75, y: 0, size: 40 }], 
+    lambdaMultiplier: 2.4, dirMix: { H: 0.6, D: 0.35, V: 0.05 }, alienSpeedTop: 80, projectileRate: 0.15, windForce: 450 },
+
+  { theme: "Windy Pass", levelBounces: 8, trampWidthRatio: 0.75, trampSpeed: 80, 
+    husks: [{ x: W * 0.15, y: 0, size: 40 }, { x: W * 0.4, y: 0, size: 40 }, { x: W * 0.6, y: 0, size: 40 }, { x: W * 0.85, y: 0, size: 50 }], 
+    lambdaMultiplier: 2.8, dirMix: { H: 0.55, D: 0.4, V: 0.05 }, alienSpeedTop: 100, projectileRate: 0.2, windForce: 550 },
+
+  { theme: "Thick Woods", levelBounces: 8, trampWidthRatio: 0.65, trampSpeed: 100, 
+    husks: [{ x: W * 0.25, y: 0, size: 40 }, { x: W * 0.3, y: 0, size: 40 }, { x: W * 0.7, y: 0, size: 40 }, { x: W * 0.75, y: 0, size: 40 }], 
+    lambdaMultiplier: 3.2, dirMix: { H: 0.5, D: 0.45, V: 0.05 }, alienSpeedTop: 120, projectileRate: 0.25, windForce: 600 },
+
+  { theme: "Shadow Path", levelBounces: 9, trampWidthRatio: 0.7, trampSpeed: 120, 
+    husks: [{ x: W * 0.2, y: 0, size: 40 }, { x: W * 0.4, y: 0, size: 40 }, { x: W * 0.6, y: 0, size: 40 }, { x: W * 0.8, y: 0, size: 40 }], 
+    lambdaMultiplier: 3.6, dirMix: { H: 0.45, D: 0.45, V: 0.1 }, alienSpeedTop: 130, projectileRate: 0.3, windForce: 650 },
+
+  { theme: "Twisted Grove", levelBounces: 9, trampWidthRatio: 0.8, trampSpeed: 140, 
+    husks: [{ x: W * 0.3, y: 0, size: 40 }, { x: W * 0.35, y: 0, size: 40 }, { x: W * 0.65, y: 0, size: 40 }, { x: W * 0.7, y: 0, size: 40 }], 
+    lambdaMultiplier: 4.0, dirMix: { H: 0.4, D: 0.5, V: 0.1 }, alienSpeedTop: 150, projectileRate: 0.35, windForce: 700 },
+
+  { theme: "Deep Root", levelBounces: 10, trampWidthRatio: 0.45, trampSpeed: 160, 
+    husks: [{ x: W * 0.1, y: 0, size: 40 }, { x: W * 0.8, y: 0, size: 40 }, { x: W * 0.85, y: 0, size: 40 }, { x: W * 0.9, y: 0, size: 40 }], 
+    lambdaMultiplier: 4.5, dirMix: { H: 0.35, D: 0.55, V: 0.1 }, alienSpeedTop: 170, projectileRate: 0.4, windForce: 750 },
+
+  { theme: "Howling Woods", levelBounces: 11, trampWidthRatio: 0.4, trampSpeed: 180, 
+    husks: [{ x: W * 0.1, y: 0, size: 40 }, { x: W * 0.15, y: 0, size: 40 }, { x: W * 0.22, y: 0, size: 40 }, { x: W * 0.8, y: 0, size: 40 }], 
+    lambdaMultiplier: 5.0, dirMix: { H: 0.3, D: 0.6, V: 0.1 }, alienSpeedTop: 190, projectileRate: 0.5, windForce: 850 },
+
+  { theme: "Heart of the Forest", levelBounces: 12, trampWidthRatio: 0.35, trampSpeed: 200, 
+    husks: [{ x: W * 0.15, y: 0, size: 40 }, { x: W * 0.19, y: 0, size: 40 }, { x: W * 0.23, y: 0, size: 40 }, { x: W * 0.65, y: 0, size: 40 }, { x: W * 0.85, y: 0, size: 40 }], 
+    lambdaMultiplier: 5.5, dirMix: { H: 0.25, D: 0.65, V: 0.1 }, alienSpeedTop: 210, projectileRate: 0.6, windForce: 1000 },
+];
 
       const WORLDS = {
-        space: {
-          id: "space",
-          name: "Space Land",
-          levels: spaceLevels,
-          movingSprite: "space",
-          staticSprite: "space",
-        },
-        earth: {
-          id: "earth",
-          name: "Earth Land",
-          levels: earthLevels,
-          movingSprite: "earth",
-          staticSprite: "earth",
-        },
-        sea: {
-          id: "sea",
-          name: "Sea Land",
-          levels: seaLevels,
-          movingSprite: "sea",
-          staticSprite: "sea",
-        },
+        space: { id: "space", name: "SPACE", levels: spaceLevels, movingSprite: "space", staticSprite: "space" },
+        earth: { id: "earth", name: "EARTH", levels: earthLevels, movingSprite: "earth", staticSprite: "earth" },
+        sea: { id: "sea", name: "SEA", levels: seaLevels, movingSprite: "sea", staticSprite: "sea" },
+        forest: { id: "forest", name: "FOREST", levels: forestLevels, movingSprite: "forest", staticSprite: "forest" },
       };
+
 
       /* ==========================================================
           INPUT
@@ -1034,6 +1080,7 @@ function getWaterSurfaceY() {
       let alienProjectiles = [];
       let hearts = [];
       let stars = [];
+      let winds = [];
       let alien = null;
       let alienDir = 1;
       let alienLanded = false;
@@ -1064,6 +1111,7 @@ function getWaterSurfaceY() {
       let levelConfigs = spaceLevels; // pointer for current world
       let earthUnlocked = true;
       let seaUnlocked = true; // Set to false to follow unlock progression
+      let forestUnlocked = true;
 
       let lives = INITIAL_LIVES;
       let bounceCount = 0;
@@ -1155,7 +1203,7 @@ function getWaterSurfaceY() {
 
       function updateHUD() {
         if (!currentWorld) {
-          hudLevel.textContent = "Select a world";
+          hudLevel.textContent = " -- ";
         } else {
           const cfg = levelConfigs[currentLevel - 1];
           const worldName = WORLDS[currentWorld].name.split(" ")[0]; // "Space" / "Earth" / "Sea"
@@ -1286,62 +1334,86 @@ function getWaterSurfaceY() {
       /* ==========================================================
           ASTEROIDS / BIRDS / SHARKS & HUSKS / CACTI / ICEBERGS
       ========================================================== */
- function spawnAsteroid(dt) {
-  if (!currentWorld) return;
-  const cfg = levelConfigs[currentLevel - 1];
-  const lambda = cfg.lambda;
-  const prob = lambda * dt;
-  if (Math.random() >= prob) return;
+function spawnAsteroid(dt) {
+        if (!currentWorld || currentWorld === "forest") return;
+        const cfg = levelConfigs[currentLevel - 1];
+        const lambda = cfg.lambda;
+        const prob = lambda * dt;
+        if (Math.random() >= prob) return;
 
-  const dirRand = Math.random();
-  let type;
-  if (dirRand < cfg.dirMix.H) type = 'H';
-  else if (dirRand < cfg.dirMix.H + cfg.dirMix.D) type = 'D';
-  else type = 'V';
+        // NEW: Spawn Wind Gusts if in Forest Land
+        if (currentWorld === 'forest' && Math.random() < 0.4) {
+          const fromLeft = Math.random() < 0.5;
+          const width = WIND_WIDTH_MIN + Math.random() * (WIND_WIDTH_MAX - WIND_WIDTH_MIN);
+          winds.push({
+            x: fromLeft ? -width : W + width,
+            y: 100 + Math.random() * (H - 300),
+            width,
+            force: WIND_MIN_FORCE + Math.random() * (WIND_MAX_FORCE - WIND_MIN_FORCE),
+            dir: fromLeft ? 1 : -1,
+            vx: fromLeft ? 150 : -150, // Movement speed of the wind sprite
+            life: WIND_LIFETIME_MIN + Math.random() * WIND_LIFETIME_MAX,
+          });
+          return;
+        }
 
-  // In Sea Land, sharks are horizontal only
-  if (currentWorld === 'sea') {
-    type = 'H';
-  }
+        const dirRand = Math.random();
+        let type;
+        if (dirRand < cfg.dirMix.H) type = 'H';
+        else if (dirRand < cfg.dirMix.H + cfg.dirMix.D) type = 'D';
+        else type = 'V';
 
-  const size = 24 + Math.random() * 12;
-  let x, y, vx, vy;
+        if (currentWorld === 'sea') type = 'H';
 
-  if (type === 'H') {
+        const size = 24 + Math.random() * 12;
+        let x, y, vx, vy;
+
+        if (type === 'H') {
+          const fromLeft = Math.random() < 0.5;
+          y = (currentWorld === 'sea') ? getWaterSurfaceY() - 10 : 150 + Math.random() * (H - 260);
+          x = fromLeft ? -size - 10 : W + size + 10;
+          const speed = 140 + Math.random() * 100;
+          vx = fromLeft ? speed : -speed;
+          vy = 0;
+        } else if (type === 'V') {
+          x = 80 + Math.random() * (W - 160); y = -size - 10; vx = 0; vy = 160 + Math.random() * 100;
+        } else {
+          const fromLeft = Math.random() < 0.5;
+          x = fromLeft ? -size - 10 : W + size + 10; y = 80 + Math.random() * 200;
+          const sp = 170 + Math.random() * 100; vx = fromLeft ? sp : -sp; vy = 50 + Math.random() * 80;
+        }
+        asteroids.push({ x, y, vx, vy, size });
+      }
+
+function spawnWind(dt) {
+    if (currentWorld !== "forest" || gameState !== State.PLAYING) return;
+    
+    // Increased frequency: changed from dt / 3.5 to dt / 1.5
+    // Lower number = higher frequency
+    if (Math.random() > dt / 1.5) return; 
+
     const fromLeft = Math.random() < 0.5;
+    const width = WIND_WIDTH_MIN + Math.random() * (WIND_WIDTH_MAX - WIND_WIDTH_MIN);
 
-    // SEA: sharks travel at a fixed height slightly above the water surface
-    if (currentWorld === 'sea') {
-      const waterSurfaceY = getWaterSurfaceY();
-      const sharkOffset = 10; // how far above the water line
-      y = waterSurfaceY - sharkOffset;
-    } else {
-      // original vertical randomization for other worlds
-      y = 150 + Math.random() * (H - 260);
-    }
-
-    x = fromLeft ? -size - 10 : W + size + 10;
-    const speed = 140 + Math.random() * 100;
-    vx = fromLeft ? speed : -speed;
-    vy = 0;
-  } else if (type === 'V') {
-    // vertical falling hazard
-    x = 80 + Math.random() * (W - 160);
-    y = -size - 10;
-    vx = 0;
-    vy = 160 + Math.random() * 100;
-  } else {
-    // diagonal movers
-    const fromLeft = Math.random() < 0.5;
-    x = fromLeft ? -size - 10 : W + size + 10;
-    y = 80 + Math.random() * 200;
-    const sp = 170 + Math.random() * 100;
-    vx = fromLeft ? sp : -sp;
-    vy = 50 + Math.random() * 80;
-  }
-
-  asteroids.push({ x, y, vx, vy, size });
+    winds.push({
+        x: fromLeft ? -width : W + width,
+        y: H * 0.2 + Math.random() * H * 0.5, // Wider vertical spawn range
+        width,
+        // Pull force from level config if available, otherwise default
+        force: (levelConfigs[currentLevel-1].windForce || 400) + (Math.random() * 200),
+        dir: fromLeft ? 1 : -1,
+        life: WIND_LIFETIME_MIN + Math.random() * WIND_LIFETIME_MAX,
+    });
 }
+
+function updateWinds(dt) {
+  winds.forEach(w => {
+    w.x += w.dir * 120 * dt;
+    w.life -= dt;
+  });
+  winds = winds.filter(w => w.life > 0);
+}
+
 
 
       function updateAsteroids(dt) {
@@ -1495,27 +1567,83 @@ function getWaterSurfaceY() {
 
 function checkHuskCollision() {
   for (let h of husks) {
-    if (currentWorld === 'sea') {
-      const baseY = getIcebergBaseY(h);   // same bobbing as draw
 
-      const width  = h.size * 3.0;
+    // Forest: tree trunks (rect)
+    if (currentWorld === "forest") {
+      const trunkW = h.size * 0.9;
+      const trunkH = h.size * 4;
+      const baseY = H - 40;
+      const rx = h.x - trunkW / 2;
+      const ry = baseY - trunkH;
+      // Draw proportionally: Height is calculated based on image ratio
+      // size acts as the width, height scales to match
+      const treeW = h.size * 2.5; 
+      const treeH = treeImgLoaded ? (treeImg.height / treeImg.width) * treeW : h.size * 6;
+
+      if (treeImgLoaded) {
+        ctx.drawImage(treeImg, h.x - treeW / 2, baseY - treeH, treeW, treeH);
+      } else {
+        // Fallback
+        ctx.fillStyle = "#5d4037";
+        ctx.fillRect(h.x - 5, baseY - treeH, 10, treeH);
+      }
+
+      if (
+        circleRectCollision(
+          player.x,
+          player.y,
+          player.radius,
+          rx,
+          ry,
+          trunkW,
+          trunkH
+        )
+      ) {
+        return true;
+      }
+      continue;
+    }
+
+    // Sea: icebergs (rect, bobbing)
+    if (currentWorld === "sea") {
+      const baseY = getIcebergBaseY(h);
+      const width = h.size * 3.0;
       const height = h.size * 5.0;
       const rx = h.x - width / 2;
       const ry = baseY - height;
 
-      if (circleRectCollision(player.x, player.y, player.radius, rx, ry, width, height)) {
+      if (
+        circleRectCollision(
+          player.x,
+          player.y,
+          player.radius,
+          rx,
+          ry,
+          width,
+          height
+        )
+      ) {
         return true;
       }
-    } else {
-      if (circleCircleCollision(player.x, player.y, player.radius, h.x, h.y, h.size)) {
-        return true;
-      }
+      continue;
+    }
+
+    // Space / Earth: circle husks
+    if (
+      circleCircleCollision(
+        player.x,
+        player.y,
+        player.radius,
+        h.x,
+        h.y,
+        h.size
+      )
+    ) {
+      return true;
     }
   }
   return false;
 }
-
-
 
 
       function checkProjectileCollision() {
@@ -1820,6 +1948,20 @@ function checkHuskCollision() {
 
         if (keys.left) player.vx -= AX * dt;
         if (keys.right) player.vx += AX * dt;
+        // Forest wind force
+        if (currentWorld === "forest" && gameState === State.PLAYING) {
+          for (let w of winds) {
+            if (
+              player.x > w.x - w.width / 2 &&
+              player.x < w.x + w.width / 2 &&
+              Math.abs(player.y - w.y) < 80
+            ) {
+              const falloff = 1 - Math.abs(player.x - w.x) / (w.width / 2);
+              player.vx += w.dir * w.force * falloff * dt;
+            }
+          }
+        }
+
 
         if (!keys.left && !keys.right && player.y < MIDLINE_Y) {
           player.vx *= 1 - DAMPING * dt;
@@ -1882,7 +2024,7 @@ function checkHuskCollision() {
         if (gameState === State.POST_TIMER) {
           if (alien && checkAlienLandingCircle()) {
             if (currentLevel >= TOTAL_LEVELS_PER_WORLD) {
-              if (currentWorld === "sea") {
+              if (currentWorld === "forest") {
                 // Check if Sea Land is beaten for final WIN
                 gameState = State.WIN;
               } else {
@@ -1905,7 +2047,7 @@ function checkHuskCollision() {
           if (alienLandingGraceTimer <= ALIEN_LANDING_GRACE) {
             if (alien && checkAlienLandingCircle()) {
               if (currentLevel >= TOTAL_LEVELS_PER_WORLD) {
-                if (currentWorld === "sea") {
+                if (currentWorld === "forest") {
                   gameState = State.WIN;
                 } else {
                   gameState = State.LEVEL_COMPLETE;
@@ -1922,7 +2064,7 @@ function checkHuskCollision() {
 
           if (alien && checkAlienLandingCircle()) {
             if (currentLevel >= TOTAL_LEVELS_PER_WORLD) {
-              if (currentWorld === "sea") {
+              if (currentWorld === "forest") {
                 gameState = State.WIN;
               } else {
                 gameState = State.LEVEL_COMPLETE;
@@ -1951,7 +2093,7 @@ function checkHuskCollision() {
       /* ==========================================================
           DRAWING
       ========================================================== */
-      function drawBackground() {
+function drawBackground() {
         ctx.save();
 
         // HOME: use home.png full-screen if available
@@ -1972,39 +2114,29 @@ function checkHuskCollision() {
             offsetY = 0;
             offsetX = (W - drawW) / 2;
           }
-
-          const yShift = 0; // move down a bit
-          ctx.drawImage(img, offsetX, offsetY + yShift, drawW, drawH);
+          ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
           ctx.restore();
           return;
         }
 
-        // IN-GAME BACKGROUNDS (Space / Earth / Sea)
-        if (!currentWorld || currentWorld === "space") {
-          ctx.fillStyle = "#02030c";
+        // IN-GAME BACKGROUNDS
+        if (currentWorld === "forest") {
+          // Lush forest gradient
+          const bg = ctx.createLinearGradient(0, 0, 0, H);
+          bg.addColorStop(0, "#0a2614"); // Darkest canopy top
+          bg.addColorStop(0.5, "#1b4d2e"); // Deep green
+          bg.addColorStop(1, "#3d2b1f"); // Earthy soil floor
+          ctx.fillStyle = bg;
           ctx.fillRect(0, 0, W, H);
-          const gradient = ctx.createRadialGradient(
-            W / 2,
-            H * 0.2,
-            0,
-            W / 2,
-            H * 0.2,
-            H
-          );
-          gradient.addColorStop(0, "#151c3a");
-          gradient.addColorStop(0.5, "#050814");
-          gradient.addColorStop(1, "#000000");
-          ctx.fillStyle = gradient;
-          ctx.fillRect(0, 0, W, H);
-          ctx.fillStyle = "rgba(255,255,255,0.8)";
-          for (let i = 0; i < 40; i++) {
-            const x = (i * 73) % W;
-            const y = ((i * 131) % H) * 0.6;
-            const r = i % 3 === 0 ? 1.3 : 0.8;
-            ctx.beginPath();
-            ctx.arc(x, y, r, 0, Math.PI * 2);
-            ctx.fill();
-          }
+
+          // Ray of light effect
+          ctx.fillStyle = "rgba(255, 255, 200, 0.05)";
+          ctx.beginPath();
+          ctx.moveTo(W * 0.3, 0);
+          ctx.lineTo(W * 0.6, 0);
+          ctx.lineTo(W * 0.4, H);
+          ctx.lineTo(W * 0.1, H);
+          ctx.fill();
         } else if (currentWorld === "earth") {
           const sky = ctx.createLinearGradient(0, 0, 0, H);
           sky.addColorStop(0, "#59b5ff");
@@ -2012,49 +2144,24 @@ function checkHuskCollision() {
           sky.addColorStop(1, "#f5a623");
           ctx.fillStyle = sky;
           ctx.fillRect(0, 0, W, H);
-
+          // Simple Ground line
           ctx.fillStyle = "rgba(255, 220, 150, 0.9)";
-          ctx.beginPath();
-          ctx.moveTo(0, H * 0.65);
-          ctx.quadraticCurveTo(W * 0.25, H * 0.6, W * 0.5, H * 0.67);
-          ctx.quadraticCurveTo(W * 0.75, H * 0.72, W, H * 0.68);
-          ctx.lineTo(W, H);
-          ctx.lineTo(0, H);
-          ctx.closePath();
-          ctx.fill();
-} else if (currentWorld === 'sea') {
-  // Sea Background Logic – water surface a bit above the trampoline
-  const waterSurfaceY = getWaterSurfaceY();
-
-  // Sky from top down to the water surface
-  const sky = ctx.createLinearGradient(0, 0, 0, waterSurfaceY);
-  sky.addColorStop(0, '#59c7ff');
-  sky.addColorStop(1, '#a1e4ff');
-  ctx.fillStyle = sky;
-  ctx.fillRect(0, 0, W, waterSurfaceY);
-
-  // Ocean from water surface down to bottom
-  const ocean = ctx.createLinearGradient(0, waterSurfaceY, 0, H);
-  ocean.addColorStop(0, '#0097a7');
-  ocean.addColorStop(1, '#005f73');
-  ctx.fillStyle = ocean;
-  ctx.fillRect(0, waterSurfaceY, W, H - waterSurfaceY);
-
-  // Wavy water surface line for a visual effect
-  ctx.strokeStyle = '#80d8ff';
-  ctx.lineWidth = 4;
-  ctx.beginPath();
-  const time = performance.now() * 0.001;
-  ctx.moveTo(0, waterSurfaceY);
-  for (let i = 0; i <= W; i += 20) {
-    const yOffset = Math.sin(i * 0.05 + time * 3) * 5;
-    ctx.lineTo(i, waterSurfaceY + yOffset);
-  }
-  ctx.stroke();
-}
-
-
-
+          ctx.fillRect(0, H * 0.7, W, H * 0.3);
+        } else if (currentWorld === 'sea') {
+          const waterSurfaceY = getWaterSurfaceY();
+          ctx.fillStyle = '#59c7ff';
+          ctx.fillRect(0, 0, W, waterSurfaceY);
+          ctx.fillStyle = '#005f73';
+          ctx.fillRect(0, waterSurfaceY, W, H - waterSurfaceY);
+        } else if (currentWorld === "space") {
+          ctx.fillStyle = "#02030c";
+          ctx.fillRect(0, 0, W, H);
+          // Starfield
+          ctx.fillStyle = "white";
+          for (let i = 0; i < 50; i++) {
+            ctx.fillRect((i * 157) % W, (i * 97) % H, 1, 1);
+          }
+        }
         ctx.restore();
       }
 
@@ -2089,6 +2196,82 @@ function checkHuskCollision() {
         ctx.stroke();
 
         ctx.restore();
+      }
+      function drawHusks() {
+        if (!currentWorld) return;
+        for (let h of husks) {
+          const size = h.size * 2;
+
+        if (currentWorld === "forest") {
+            const trunkW = 50; // Standard trunk width
+            const treeH = 150; // Standard fixed height for all trees
+            const baseY = H - 40;
+
+            if (treeImgLoaded) {
+                // Draw using the fixed treeH
+                ctx.drawImage(treeImg, h.x - h.size, baseY - treeH, h.size * 2, treeH);
+            } else {
+                // Fallback: Fixed height rectangles
+                ctx.fillStyle = "#4e342e";
+                ctx.fillRect(h.x - trunkW / 2, baseY - treeH, trunkW, treeH);
+                ctx.fillStyle = "#1b5e20";
+                ctx.beginPath();
+                ctx.ellipse(h.x, baseY - treeH, h.size * 1.5, 60, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+          } else if (currentWorld === "sea") {
+            const bY = getIcebergBaseY(h);
+            const width = h.size * 3.5;
+            const height = h.size * 6;
+            if (icebergImgLoaded) {
+              ctx.drawImage(icebergImg, h.x - width / 2, bY - height, width, height);
+            } else {
+              ctx.fillStyle = "#b3e5fc";
+              ctx.beginPath();
+              ctx.moveTo(h.x, bY - height);
+              ctx.lineTo(h.x - width * 0.5, bY);
+              ctx.lineTo(h.x + width * 0.5, bY);
+              ctx.fill();
+            }
+          } else if (currentWorld === "earth") {
+            if (cactusImgLoaded) ctx.drawImage(cactusImg, h.x - h.size, h.y - h.size, h.size * 2, h.size * 2);
+          } else if (currentWorld === "space") {
+            if (asteroidImgLoaded) ctx.drawImage(asteroidImg, h.x - h.size, h.y - h.size, h.size * 2, h.size * 2);
+          }
+        }
+      }
+
+      function drawAsteroids() {
+        if (!currentWorld) return;
+        for (let a of asteroids) {
+          ctx.save();
+          ctx.translate(a.x, a.y);
+          if (a.vx > 0) ctx.scale(-1, 1);
+          if (currentWorld === "earth" && birdImgLoaded) ctx.drawImage(birdImg, -a.size/2, -a.size/2, a.size, a.size);
+          else if (currentWorld === "sea" && sharkImgLoaded) ctx.drawImage(sharkImg, -a.size, -a.size/2, a.size*2, a.size);
+          else if (rockImgLoaded) ctx.drawImage(rockImg, -a.size/2, -a.size/2, a.size, a.size);
+          ctx.restore();
+        }
+
+        // Draw Wind Gusts
+        for (let w of winds) {
+            ctx.save();
+            // Fades out as the wind "dies"
+            ctx.globalAlpha = 0.4 * (w.life / WIND_LIFETIME_MAX);
+            if (windImgLoaded) {
+                // Flip the wind image if it's blowing left
+                if (w.dir === -1) {
+                    ctx.save();
+                    ctx.translate(w.x, w.y);
+                    ctx.scale(-1, 1);
+                    ctx.drawImage(windImg, -w.width/2, -30, w.width, 60);
+                    ctx.restore();
+                } else {
+                    ctx.drawImage(windImg, w.x - w.width/2, w.y - 30, w.width, 60);
+                }
+            }
+            ctx.restore();
+        }
       }
 
       function drawPlayer() {
@@ -2144,137 +2327,6 @@ function checkHuskCollision() {
         ctx.stroke();
 
         ctx.restore();
-      }
-
-      function drawAsteroids() {
-        if (!currentWorld) return;
-        for (let a of asteroids) {
-          ctx.save();
-          ctx.translate(a.x, a.y);
-          const size = a.size;
-
-          if (currentWorld === "space") {
-            ctx.rotate((a.x + a.y) * 0.002);
-            if (rockImgLoaded) {
-              ctx.drawImage(rockImg, -size / 2, -size / 2, size, size);
-            } else {
-              ctx.fillStyle = "#ff3b3b";
-              ctx.fillRect(-size / 2, -size / 2, size, size);
-            }
-          } else if (currentWorld === "earth") {
-            // Earth: Birds
-            const wobbleY = Math.sin(performance.now() * 0.008 + a.x * 0.01) * 4;
-            ctx.translate(0, wobbleY);
-
-            // FLIP LOGIC HERE
-            // If vx is negative, the bird is moving left, so we flip the image
-            if (a.vx > 0) {
-              ctx.scale(-1, 1);
-            }
-
-            if (birdImgLoaded) {
-              // We still draw at -size/2 because the entire coordinate system flipped
-              ctx.drawImage(birdImg, -size / 2, -size / 2, size, size);
-            } else {
-              ctx.fillStyle = "#2d3df5";
-              ctx.beginPath();
-              ctx.arc(0, 0, size / 2, 0, Math.PI * 2);
-              ctx.fill();
-            }
-          } else if (currentWorld === "sea") {
-            // Sea: Sharks (Already has flip logic in your original code)
-            const scaleX = a.vx > 0 ? 1 : -1;
-            const sSize = a.size * 1.8;
-            ctx.scale(scaleX, 1);
-            if (sharkImgLoaded) {
-              ctx.drawImage(sharkImg, -sSize / 2, -sSize / 2, sSize, sSize);
-            } else {
-              ctx.fillStyle = "#f56342";
-              ctx.beginPath();
-              ctx.moveTo(0, -sSize / 2);
-              ctx.lineTo(sSize / 2, sSize / 2);
-              ctx.lineTo(-sSize / 2, sSize / 2);
-              ctx.closePath();
-              ctx.fill();
-            }
-          }
-          ctx.restore();
-        }
-      }
-
-      function drawHusks() {
-        if (!currentWorld) return;
-        for (let h of husks) {
-          const size = h.size * 2;
-
-          if (currentWorld === "space") {
-            if (asteroidImgLoaded) {
-              ctx.drawImage(
-                asteroidImg,
-                h.x - size / 2,
-                h.y - size / 2,
-                size,
-                size
-              );
-            } else {
-              ctx.fillStyle = "#9ea2b0";
-              ctx.strokeStyle = "#555a68";
-              ctx.lineWidth = 1.4;
-              const sides = 6;
-              const r = h.size;
-              ctx.beginPath();
-              for (let i = 0; i < sides; i++) {
-                const angle = ((Math.PI * 2) / sides) * i + Math.PI / 6;
-                const x = h.x + Math.cos(angle) * r;
-                const y = h.y + Math.sin(angle) * r;
-                if (i === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
-              }
-              ctx.closePath();
-              ctx.fill();
-              ctx.stroke();
-              ctx.lineWidth = 1;
-            }
-          } else if (currentWorld === "earth") {
-            if (cactusImgLoaded) {
-              ctx.drawImage(
-                cactusImg,
-                h.x - size / 2,
-                h.y - size / 2,
-                size,
-                size
-              );
-            } else {
-              ctx.fillStyle = "#2eaa3b";
-              ctx.fillRect(h.x - h.size / 2, h.y - h.size, h.size, h.size * 2);
-            }
-} else if (currentWorld === 'sea') {
-  // Sea: Tall icebergs rising out of the water, gently bobbing.
-  const baseY = getIcebergBaseY(h);  // <-- bobbing base Y
-
-  const width  = h.size * 3.5;
-  const height = h.size * 6;
-
-  if (icebergImgLoaded) {
-    ctx.drawImage(
-      icebergImg,
-      h.x - width / 2,
-      baseY - height,    // extend upward
-      width,
-      height
-    );
-  } else {
-    ctx.fillStyle = '#b3e5fc';
-    ctx.beginPath();
-    ctx.moveTo(h.x, baseY - height);        // tip
-    ctx.lineTo(h.x - width * 0.5, baseY);   // left base
-    ctx.lineTo(h.x + width * 0.5, baseY);   // right base
-    ctx.closePath();
-    ctx.fill();
-  }
-}
-
-        }
       }
 
       function drawProjectiles() {
@@ -2459,21 +2511,18 @@ function checkHuskCollision() {
       /* ==========================================================
           UI OVERLAYS (HOME + INSTRUCTIONS + WIN)
       ========================================================== */
-      function drawHomeScreen() {
+function drawHomeScreen() {
         ctx.save();
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-
-        // Dim background
         ctx.fillStyle = "rgba(0,0,0,0.45)";
         ctx.fillRect(0, 0, W, H);
 
-        const boxWidth = 700; // Adjusted for three cards
-        const boxHeight = 280; // Adjusted for three cards
+        const boxWidth = 740; 
+        const boxHeight = 280;
         const boxX = W / 2 - boxWidth / 2;
         const boxY = H / 2 - boxHeight / 2 + 20;
 
-        // Panel
         ctx.fillStyle = "rgba(0,0,0,0.8)";
         ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
         ctx.strokeStyle = "rgba(255,255,255,0.16)";
@@ -2482,147 +2531,49 @@ function checkHuskCollision() {
 
         ctx.fillStyle = "#ffe8a9";
         ctx.font = "24px system-ui";
-        ctx.fillText("Select a Land", W / 2, boxY + 32);
+        ctx.fillText("SELECT A WORLD", W / 2, boxY + 32);
 
-        const cardWidth = 200; // Adjusted
-        const cardHeight = 120;
+        const cardW = 160;
+        const cardH = 120;
         const cardY = boxY + 90;
-        const cardGap = 20;
+        const gap = 15;
+        const worlds = ["space", "earth", "sea", "forest"];
+        const imgs = [spaceTileImg, earthTileImg, seaTileImg, forestTileImg];
+        const locks = [false, !earthUnlocked, !seaUnlocked, !forestUnlocked];
+        const colors = ["#9dacff", "#f7c94a", "#59c7ff", "#7ed321"];
 
-        // Calculate positions for three cards
-        const totalCardsWidth = cardWidth * 3 + cardGap * 2;
-        const startX = W / 2 - totalCardsWidth / 2;
-        const spaceX = startX;
-        const earthX = startX + cardWidth + cardGap;
-        const seaX = startX + cardWidth * 2 + cardGap * 2;
+        const totalW = (cardW * 4) + (gap * 3);
+        const startX = W / 2 - totalW / 2;
 
-        // Helper to draw card + overlay text
-        function drawLandCard(opts) {
-          const {
-            imgLoaded,
-            img,
-            x,
-            y,
-            w,
-            h,
-            borderColor,
-            title,
-            subtitle,
-            locked,
-          } = opts;
-
-          // Image or fallback
-          if (imgLoaded && img) {
-            ctx.drawImage(img, x, y, w, h);
+        for (let i = 0; i < worlds.length; i++) {
+          const cx = startX + i * (cardW + gap);
+          
+          // Draw image
+          if (imgs[i].complete && imgs[i].naturalWidth !== 0) {
+            ctx.drawImage(imgs[i], cx, cardY, cardW, cardH);
           } else {
-            ctx.fillStyle = "rgba(10,15,40,0.9)";
-            ctx.fillRect(x, y, w, h);
+            ctx.fillStyle = "#1a1a1a";
+            ctx.fillRect(cx, cardY, cardW, cardH);
+          }
+          
+          // Border and Lock
+          ctx.strokeStyle = locks[i] ? "#333" : colors[i];
+          ctx.lineWidth = 2;
+          ctx.strokeRect(cx, cardY, cardW, cardH);
+
+          if (locks[i]) {
+            ctx.fillStyle = "rgba(0,0,0,0.5)";
+            ctx.fillRect(cx, cardY, cardW, cardH);
+            ctx.fillStyle = "white";
+            ctx.font = "14px system-ui";
+            ctx.fillText("Locked", cx + cardW/2, cardY + cardH/2);
           }
 
-          // Border
-          ctx.strokeStyle = borderColor;
-          ctx.lineWidth = 1;
-          ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
-
-          // Text overlay (shadow for readability)
-          const titleY = y + 14;
-          const subtitleY = y + h - 14;
-
-          ctx.font = "15px system-ui";
-          ctx.textAlign = "center";
-
-          // drop shadow
-          ctx.shadowColor = "rgba(0,0,0,0.8)";
-          ctx.shadowBlur = 6;
-          ctx.shadowOffsetX = 0;
-          ctx.shadowOffsetY = 2;
-
-          if (locked) {
-            // darken card and show lock text
-            ctx.fillStyle = "rgba(0,0,0,0.45)";
-            ctx.fillRect(x, y, w, h);
-
-            ctx.fillStyle = "#ffaaaa";
-            ctx.fillText("Locked", x + w / 2, (y + y + h) / 2 - 8);
-
-            ctx.font = "12px system-ui";
-            ctx.fillStyle = "#ffd7d7";
-            ctx.fillText(
-              "Beat the previous Land first",
-              x + w / 2,
-              (y + y + h) / 2 + 12
-            );
-          } else {
-            // Title (world name) – top
-            ctx.font = "16px system-ui";
-            ctx.fillStyle = "#ffffff";
-            ctx.fillText(title, x + w / 2, titleY);
-
-            // Subtitle (levels) – bottom
-            ctx.font = "13px system-ui";
-            ctx.fillStyle = "#ffe8a9";
-            ctx.fillText(subtitle, x + w / 2, subtitleY);
-          }
-
-          // reset shadow
-          ctx.shadowColor = "transparent";
-          ctx.shadowBlur = 0;
-          ctx.shadowOffsetX = 0;
-          ctx.shadowOffsetY = 0;
+          // Label
+          ctx.fillStyle = "white";
+          ctx.font = "14px system-ui";
+          ctx.fillText(WORLDS[worlds[i]].name, cx + cardW / 2, cardY + cardH + 25);
         }
-
-        // Space Land card
-        drawLandCard({
-          imgLoaded: spaceTileLoaded,
-          img: spaceTileImg,
-          x: spaceX,
-          y: cardY,
-          w: cardWidth,
-          h: cardHeight,
-          borderColor: "#9dacff",
-          title: "Space",
-          subtitle: "Levels 1–10",
-          locked: false,
-        });
-
-        // Earth Land card
-        drawLandCard({
-          imgLoaded: earthTileLoaded,
-          img: earthTileImg,
-          x: earthX,
-          y: cardY,
-          w: cardWidth,
-          h: cardHeight,
-          borderColor: earthUnlocked ? "#f7c94a" : "rgba(255,255,255,0.2)",
-          title: "Earth",
-          subtitle: "Levels 1–10",
-          locked: !earthUnlocked,
-        });
-
-        // Sea Land card (NEW)
-        drawLandCard({
-          imgLoaded: seaTileLoaded,
-          img: seaTileImg,
-          x: seaX,
-          y: cardY,
-          w: cardWidth,
-          h: cardHeight,
-          borderColor: seaUnlocked ? "#59c7ff" : "rgba(255,255,255,0.2)",
-          title: "Sea",
-          subtitle: "Levels 1–10",
-          locked: !seaUnlocked,
-        });
-
-        // Footer hint
-        ctx.font = "13px system-ui";
-        ctx.fillStyle = "#9dacff";
-        ctx.textAlign = "center";
-        ctx.fillText(
-          "Click a land to begin, or press ▶️ to jump into the currently selected land.",
-          W / 2,
-          boxY + boxHeight - 26
-        );
-
         ctx.restore();
       }
 
@@ -2706,7 +2657,7 @@ function checkHuskCollision() {
 
         ctx.fillStyle = "#ffe8a9";
         ctx.font = "16px system-ui";
-        ctx.fillText("You survived Space, Earth, & Sea.", W / 2, boxY + 70);
+        ctx.fillText("You survived Space, Earth, Sea, & Forest.", W / 2, boxY + 70);
 
         ctx.font = "14px system-ui";
         ctx.fillStyle = "#c5ccff";
@@ -2855,10 +2806,19 @@ function checkHuskCollision() {
             currentWorld === "sea" &&
             currentLevel === TOTAL_LEVELS_PER_WORLD
           ) {
-            gameState = State.WIN; // Final win state
-          } else if (currentLevel < TOTAL_LEVELS_PER_WORLD) {
-            resetLevel(currentLevel + 1);
-          } else {
+            forestUnlocked = true;
+            gameState = State.HOME;
+            currentWorld = null;
+            updateHUD();
+            updateMusicState();
+          } else if (
+  currentWorld === "forest" &&
+  currentLevel === TOTAL_LEVELS_PER_WORLD
+) {
+  gameState = State.WIN;
+} else if (currentLevel < TOTAL_LEVELS_PER_WORLD) {
+  resetLevel(currentLevel + 1);
+} else {
             // Should only happen if total levels per world changes, but fallback to home
             gameState = State.HOME;
             currentWorld = null;
@@ -2898,7 +2858,7 @@ function checkHuskCollision() {
       /* ==========================================================
           HOME SCREEN CLICK HANDLING (world selection)
       ========================================================== */
-      canvas.addEventListener("click", (e) => {
+ canvas.addEventListener("click", (e) => {
         if (gameState !== State.HOME) return;
         const rect = canvas.getBoundingClientRect();
         const scaleX = W / rect.width;
@@ -2906,42 +2866,38 @@ function checkHuskCollision() {
         const x = (e.clientX - rect.left) * scaleX;
         const y = (e.clientY - rect.top) * scaleY;
 
-        const boxWidth = 700; // Adjusted for three cards
+        const boxWidth = 700;
         const boxHeight = 280;
         const boxX = W / 2 - boxWidth / 2;
         const boxY = H / 2 - boxHeight / 2;
 
-        const cardWidth = 200; // Adjusted
+        const cardWidth = 160; // Adjusted for 4 cards
         const cardHeight = 120;
         const cardY = boxY + 90;
-        const cardGap = 20;
+        const cardGap = 15;
 
-        // Recalculate positions based on the new 3-card layout
-        const totalCardsWidth = cardWidth * 3 + cardGap * 2;
-        const startX = W / 2 - totalCardsWidth / 2;
-        const spaceX = startX;
-        const earthX = startX + cardWidth + cardGap;
-        const seaX = startX + cardWidth * 2 + cardGap * 2; // NEW POSITION
+        // Calculate positions for all 4 cards
+        const worlds = ["space", "earth", "sea", "forest"];
+        const totalWidth = (cardWidth * 4) + (cardGap * 3);
+        const startX = W / 2 - totalWidth / 2;
 
         function inRect(px, py, rx, ry, rw, rh) {
-          return (
-            px >= rx && px <= rx + rw && py >= ry && py <= ry + rh
-          );
+          return (px >= rx && px <= rx + rw && py >= ry && py <= ry + rh);
         }
 
-        if (inRect(x, y, spaceX, cardY, cardWidth, cardHeight)) {
-          enterWorld("space");
-        } else if (inRect(x, y, earthX, cardY, cardWidth, cardHeight)) {
-          if (earthUnlocked) {
-            enterWorld("earth");
-          } else {
-            setStatus("Earth Land is locked. Beat Space Land first!");
-          }
-        } else if (inRect(x, y, seaX, cardY, cardWidth, cardHeight)) {
-          if (seaUnlocked) {
-            enterWorld("sea");
-          } else {
-            setStatus("Sea Land is locked. Beat Earth Land first!");
+        for (let i = 0; i < worlds.length; i++) {
+          const cx = startX + i * (cardWidth + cardGap);
+          if (inRect(x, y, cx, cardY, cardWidth, cardHeight)) {
+            const wId = worlds[i];
+            if (wId === "earth" && !earthUnlocked) {
+              setStatus("Earth Land is locked!");
+            } else if (wId === "sea" && !seaUnlocked) {
+              setStatus("Sea Land is locked!");
+            } else if (wId === "forest" && !forestUnlocked) {
+              setStatus("Forest Land is locked!");
+            } else {
+              enterWorld(wId);
+            }
           }
         }
       });
@@ -2949,7 +2905,7 @@ function checkHuskCollision() {
       /* ==========================================================
           GAME LOOP
       ========================================================== */
-      function gameLoop(timestamp) {
+ function gameLoop(timestamp) {
         if (!lastTimestamp) {
           lastTimestamp = timestamp;
           requestAnimationFrame(gameLoop);
@@ -2971,17 +2927,14 @@ function checkHuskCollision() {
           updateHearts(dt);
           spawnStar(dt);
           updateStars(dt);
+          spawnWind(dt);
+          updateWinds(dt);
         } else if (gameState === State.POST_TIMER) {
           handleTimerAndMusic(dt);
           updateAlien(dt);
           updateTrampoline(dt);
           updatePlayer(dt);
-        } else if (
-          gameState === State.WAITING ||
-          gameState === State.LEVEL_COMPLETE ||
-          gameState === State.GAME_OVER ||
-          gameState === State.WIN
-        ) {
+        } else {
           updateTrampoline(dt);
           updateAlien(dt);
         }
@@ -2990,6 +2943,7 @@ function checkHuskCollision() {
         updateDeathEffect(dt);
 
         drawBackground();
+        
         if (currentWorld) {
           drawSuctionBeam();
           drawHusks();
@@ -3002,6 +2956,7 @@ function checkHuskCollision() {
           drawAlien();
           drawPlayer();
         }
+
         drawWinEffect();
         drawDeathEffect();
         drawUIOverlay();
