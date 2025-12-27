@@ -1109,9 +1109,9 @@ const forestLevels = [
       let currentWorld = null; // 'space' or 'earth'
       let currentLevel = 1;
       let levelConfigs = spaceLevels; // pointer for current world
-      let earthUnlocked = true;
-      let seaUnlocked = true; // Set to false to follow unlock progression
-      let forestUnlocked = true;
+      let earthUnlocked = false;
+      let seaUnlocked = false; // Set to false to follow unlock progression
+      let forestUnlocked = false;
 
       let lives = INITIAL_LIVES;
       let bounceCount = 0;
@@ -2562,11 +2562,16 @@ function drawHomeScreen() {
           ctx.strokeRect(cx, cardY, cardW, cardH);
 
           if (locks[i]) {
-            ctx.fillStyle = "rgba(0,0,0,0.5)";
+            ctx.fillStyle = "rgba(0,0,0,0.8)";
             ctx.fillRect(cx, cardY, cardW, cardH);
+         // Draw Lock Emoji
+            ctx.font = "40px serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText("🔒", cx + cardW/2, cardY + cardH/2);
             ctx.fillStyle = "white";
             ctx.font = "14px system-ui";
-            ctx.fillText("Locked", cx + cardW/2, cardY + cardH/2);
+            ctx.fillText("LOCKED", cx + cardW/2, cardY + cardH/1.45);
           }
 
           // Label
